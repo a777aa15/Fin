@@ -3,14 +3,22 @@
 Прод-стек: **Docker Compose** = приложение (Next.js standalone) + **PostgreSQL**.
 Сайт поднимется на `http://<ip-сервера>` (порт 80).
 
-## 1. Установить Docker (Ubuntu/Debian)
+## 1. Установить Docker
 
+**Ubuntu/Debian:**
 ```bash
 curl -fsSL https://get.docker.com | sh
-sudo usermod -aG docker $USER   # чтобы docker работал без sudo (перелогиньтесь после)
+```
+
+**AlmaLinux / RHEL / Rocky / CentOS:**
+```bash
+curl -fsSL https://download.docker.com/linux/centos/docker-ce.repo -o /etc/yum.repos.d/docker-ce.repo
+dnf -y install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin --allowerasing
+systemctl enable --now docker
 ```
 
 Проверка: `docker --version` и `docker compose version`.
+Если работаете не под root — добавьте себя в группу: `sudo usermod -aG docker $USER` (затем перелогиньтесь).
 
 ## 2. Забрать код
 
@@ -42,6 +50,11 @@ nano .env
 
 ```bash
 docker compose up -d --build
+```
+
+Откройте порт 80 (на AlmaLinux/RHEL активен firewalld):
+```bash
+firewall-cmd --permanent --add-port=80/tcp && firewall-cmd --reload
 ```
 
 Первая сборка займёт пару минут. Затем откройте в браузере:
