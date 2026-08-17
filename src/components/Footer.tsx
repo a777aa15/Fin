@@ -35,7 +35,7 @@ export function Footer() {
             links={[
               { label: "Чему научитесь", href: "/#outcomes" },
               { label: "Для кого", href: "/#audience" },
-              { label: "Тарифы", href: "/#pricing" },
+              { label: "Записаться", href: "/#enroll" },
               { label: "Вопросы", href: "/#faq" },
             ]}
           />

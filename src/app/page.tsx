@@ -2,26 +2,29 @@ import type { ReactNode } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { EnrollButton } from "@/components/EnrollButton";
-import { Container, SectionHeading, ButtonLink, ArrowIcon, CheckIcon } from "@/components/primitives";
+import { EnrollSection } from "@/components/EnrollSection";
+import { Container, SectionHeading, ArrowIcon, CheckIcon } from "@/components/primitives";
 import { RedirectIfAuthed } from "@/components/RedirectIfAuthed";
+import { SiteBackground } from "@/components/SiteBackground";
 import { courseFacts } from "@/content/course";
 
 export default function Home() {
   return (
     <>
       <RedirectIfAuthed />
+      <SiteBackground />
       <Header />
       <main className="flex-1">
         <Hero />
         <StatsBand />
         <Outcomes />
+        <Advantages />
         <Audience />
         <Format />
         <Transformation />
         <Process />
-        <Pricing />
+        <EnrollSection />
         <Faq />
-        <FinalCta />
       </main>
       <Footer />
     </>
@@ -32,7 +35,9 @@ export default function Home() {
 function Hero() {
   return (
     <section className="relative overflow-hidden border-b border-border bg-card">
-      <Container size="wide" className="py-16 sm:py-20">
+      <div aria-hidden className="deco-grid pointer-events-none absolute inset-0 opacity-70" />
+      <div aria-hidden className="deco-glow pointer-events-none absolute inset-x-0 top-0 h-56" />
+      <Container size="wide" className="relative z-10 py-16 sm:py-20">
         <div className="grid items-center gap-12 lg:grid-cols-[1.1fr_0.9fr]">
           <div>
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3.5 py-1.5">
@@ -147,15 +152,15 @@ function StatsBand() {
 
 /* ---------------------------------------------------------- OUTCOMES */
 const OUTCOMES = [
-  { title: "Читать финансовую отчётность", desc: "Баланс, P&L и cash flow — понимать, что стоит за цифрами, и находить нестыковки." },
-  { title: "Анализировать состояние компании", desc: "Ликвидность, рентабельность, оборачиваемость, долговая нагрузка — по формулам и на практике." },
-  { title: "Работать в Excel как финансист", desc: "Формулы, модели, план-факт и таблицы чувствительности — рабочий инструмент, а не хаос." },
-  { title: "Строить финансовые модели", desc: "Трёхкомпонентная модель и DCF-оценка — от выручки до справедливой стоимости бизнеса." },
-  { title: "Оценивать инвестпроекты", desc: "NPV, IRR, срок окупаемости, стоимость капитала (WACC, CAPM) — принимать обоснованные решения." },
-  { title: "Считать юнит-экономику", desc: "LTV/CAC, точка безубыточности, маржинальность — понимать, зарабатывает ли бизнес." },
-  { title: "Бюджетировать и прогнозировать", desc: "Строить бюджет, вести план-факт, прогнозировать выручку и операционные расходы." },
-  { title: "Представлять цифры и выводы", desc: "Готовить аналитическую отчётность и доносить результат до руководства." },
-  { title: "Защитить дипломный проект", desc: "Полный финансовый анализ реальной компании — готовый кейс в портфолио для работодателя." },
+  "Читать баланс, P&L и отчёт о движении денег",
+  "Анализировать финансовое состояние компании",
+  "Строить финмодели и DCF-оценку в Excel",
+  "Оценивать проекты через NPV и IRR",
+  "Считать стоимость капитала: WACC и CAPM",
+  "Разбирать юнит-экономику: LTV/CAC и безубыточность",
+  "Бюджетировать и прогнозировать выручку",
+  "Готовить и презентовать аналитическую отчётность",
+  "Защитить дипломный проект на реальной компании",
 ];
 
 function Outcomes() {
@@ -164,19 +169,20 @@ function Outcomes() {
       <Container size="wide">
         <SectionHeading
           eyebrow="Результат"
-          title="Чему вы научитесь"
-          intro="Не абстрактная теория, а конкретные навыки, которые ежедневно применяет финансовый аналитик — и которые можно показать на собеседовании."
+          title="Что вы будете уметь"
+          intro="Навыки, которые аналитик применяет каждый день — и которые спрашивают на собеседовании."
         />
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {OUTCOMES.map((o, i) => (
-            <div key={o.title} className="card p-6">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-green-light text-sm font-bold text-green-dark">
-                {String(i + 1).padStart(2, "0")}
-              </div>
-              <h3 className="mt-4 text-base font-bold text-ink">{o.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-ink-secondary">{o.desc}</p>
-            </div>
-          ))}
+        <div className="mt-10 rounded-2xl border border-border bg-card p-6 sm:p-8">
+          <ul className="grid gap-x-10 gap-y-4 sm:grid-cols-2">
+            {OUTCOMES.map((o) => (
+              <li key={o} className="flex items-center gap-3">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-green-light text-green-dark">
+                  <CheckIcon className="h-3.5 w-3.5" />
+                </span>
+                <span className="text-[15px] text-ink">{o}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       </Container>
     </section>
@@ -185,21 +191,60 @@ function Outcomes() {
 
 /* ---------------------------------------------------------- AUDIENCE */
 const AUDIENCE = [
-  { title: "Новичкам с нуля", desc: "Без опыта в финансах — начинаете с азов бухучёта и отчётности, без пробелов." },
-  { title: "Тем, кто меняет профессию", desc: "Хотите войти в финансы из смежной сферы и получить востребованную специальность." },
-  { title: "Начинающим специалистам", desc: "Бухгалтерам, экономистам, junior-аналитикам — систематизировать знания и вырасти." },
-  { title: "Предпринимателям", desc: "Понимать финансы своего бизнеса: юнит-экономику, модель, точку безубыточности." },
+  { title: "Начинаете с нуля", desc: "Никогда не работали с финансами? Дойдёте до уверенного анализа компаний — без пробелов." },
+  { title: "Меняете профессию", desc: "Войдёте в востребованную профессию с понятным карьерным треком и зарплатой выше рынка." },
+  { title: "Уже в профессии", desc: "Бухгалтер или экономист? Систематизируете знания и вырастете до аналитика." },
+  { title: "Ведёте бизнес", desc: "Начнёте принимать решения по цифрам, а не на ощупь: модель, юнит-экономика, точка безубыточности." },
 ];
 
 function Audience() {
   return (
     <section id="audience" className="scroll-mt-16 py-14 sm:py-20">
       <Container size="wide">
-        <SectionHeading eyebrow="Для кого" title="Подойдёт, если вы —" />
+        <SectionHeading
+          eyebrow="Для кого"
+          title="Этот курс — для вас"
+          intro="Программа построена так, чтобы довести до результата с любой стартовой точки."
+        />
         <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {AUDIENCE.map((a) => (
-            <div key={a.title} className="rounded-xl border border-border bg-card p-6">
+            <div key={a.title} className="rounded-xl border border-border bg-card p-6 transition-colors hover:border-green/40">
               <h3 className="text-base font-bold text-ink">{a.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-ink-secondary">{a.desc}</p>
+            </div>
+          ))}
+        </div>
+      </Container>
+    </section>
+  );
+}
+
+/* --------------------------------------------------------- ADVANTAGES */
+const ADVANTAGES = [
+  { title: "Личный ИИ-наставник", desc: "Старший финаналитик отвечает на вопросы 24/7 — прямо по теме урока, а не общими словами.", icon: "chat" },
+  { title: "Практика в каждом модуле", desc: "Тесты, 6 калькуляторов и тренажёр «Финансовый детектив» — навык, а не конспект.", icon: "target" },
+  { title: "Реальный кейс на выходе", desc: "Дипломный проект — полный анализ реальной компании. Готовое портфолио для работодателя.", icon: "award" },
+  { title: "С нуля и без пробелов", desc: "Логичная структура от бухучёта до DCF — каждый шаг стоит на своём месте.", icon: "steps" },
+  { title: "Учитесь в своём темпе", desc: "Доступ с любого устройства, прогресс сохраняется в аккаунте. Возвращайтесь когда удобно.", icon: "clock" },
+  { title: "Прикладной результат", desc: "То, что аналитики делают каждый день и спрашивают на собеседовании — ничего лишнего.", icon: "spark" },
+];
+
+function Advantages() {
+  return (
+    <section className="scroll-mt-16 py-14 sm:py-20">
+      <Container size="wide">
+        <SectionHeading
+          eyebrow="Почему мы"
+          title="Что вы получаете помимо теории"
+          intro="Наставник, постоянная практика и реальный кейс в портфолио — то, чего не даёт обычный видеокурс."
+        />
+        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {ADVANTAGES.map((a) => (
+            <div key={a.title} className="card p-6">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green text-on-green">
+                <AdvIcon name={a.icon} />
+              </div>
+              <h3 className="mt-4 text-base font-bold text-ink">{a.title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-ink-secondary">{a.desc}</p>
             </div>
           ))}
@@ -320,72 +365,24 @@ function Process() {
   );
 }
 
-/* ----------------------------------------------------------- PRICING */
-const PLANS = [
-  {
-    name: "Самостоятельно",
-    tagline: "Все материалы курса",
-    features: ["148 уроков и доп. материалы", "Тесты с автопроверкой", "Калькуляторы и глоссарий", "Тренажёр «Детектив»"],
-    highlighted: false,
-  },
-  {
-    name: "С практикой",
-    tagline: "Материалы + сопровождение",
-    features: ["Всё из тарифа «Самостоятельно»", "Проверка ключевых заданий", "Дипломный проект с ревью", "Ответы на вопросы"],
-    highlighted: true,
-  },
-  {
-    name: "С наставником",
-    tagline: "Максимальное сопровождение",
-    features: ["Всё из тарифа «С практикой»", "Личный наставник-аналитик", "Разбор карьеры и резюме", "Приоритетная поддержка"],
-    highlighted: false,
-  },
-];
-
-function Pricing() {
-  return (
-    <section id="pricing" className="scroll-mt-16 py-14 sm:py-20">
-      <Container size="wide">
-        <SectionHeading
-          eyebrow="Тарифы"
-          title="Выберите формат участия"
-          intro="Стоимость и старт ближайшего потока уточняются — оставьте заявку, и мы расскажем об условиях и действующих предложениях."
-        />
-        <div className="mt-10 grid gap-5 lg:grid-cols-3">
-          {PLANS.map((p) => (
-            <div
-              key={p.name}
-              className={`relative flex flex-col rounded-2xl border p-7 ${
-                p.highlighted ? "border-green bg-card shadow-md" : "border-border bg-card"
-              }`}
-            >
-              {p.highlighted ? (
-                <span className="absolute -top-3 left-7 rounded-full bg-green px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-on-green">
-                  Популярный
-                </span>
-              ) : null}
-              <h3 className="text-lg font-bold text-ink">{p.name}</h3>
-              <p className="mt-1 text-sm text-ink-secondary">{p.tagline}</p>
-              <div className="mt-4 text-2xl font-extrabold text-ink">По запросу</div>
-              <ul className="mt-5 flex-1 space-y-3">
-                {p.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2.5 text-sm text-ink-secondary">
-                    <CheckIcon className="mt-0.5 h-4 w-4 shrink-0 text-green" />
-                    <span>{f}</span>
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-6">
-                <EnrollButton variant={p.highlighted ? "primary" : "secondary"} className="w-full">
-                  Записаться
-                </EnrollButton>
-              </div>
-            </div>
-          ))}
-        </div>
-      </Container>
-    </section>
-  );
+function AdvIcon({ name }: { name: string }): ReactNode {
+  const c = { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8, "aria-hidden": true, className: "h-5 w-5" } as const;
+  switch (name) {
+    case "chat":
+      return <svg {...c}><path d="M21 12a8 8 0 01-11.5 7.2L4 20l1-4.5A8 8 0 1121 12z" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+    case "target":
+      return <svg {...c}><circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="3.5" /></svg>;
+    case "award":
+      return <svg {...c}><circle cx="12" cy="9" r="5" /><path d="M9 13.5L8 21l4-2 4 2-1-7.5" strokeLinejoin="round" /></svg>;
+    case "steps":
+      return <svg {...c}><path d="M4 19h4v-4h4v-4h4V7h4" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+    case "clock":
+      return <svg {...c}><circle cx="12" cy="12" r="8" /><path d="M12 8v4l3 2" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+    case "spark":
+      return <svg {...c}><path d="M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2 2-6z" strokeLinejoin="round" /></svg>;
+    default:
+      return null;
+  }
 }
 
 /* --------------------------------------------------------------- FAQ */
@@ -416,41 +413,6 @@ function Faq() {
               <p className="mt-3 text-sm leading-relaxed text-ink-secondary">{item.a}</p>
             </details>
           ))}
-        </div>
-      </Container>
-    </section>
-  );
-}
-
-/* ---------------------------------------------------------- FINAL CTA */
-function FinalCta() {
-  return (
-    <section className="py-14 sm:py-20">
-      <Container size="wide">
-        <div className="relative overflow-hidden rounded-3xl border border-border-strong bg-card px-6 py-16 text-center sm:px-12 sm:py-20">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-x-0 top-0 h-44 opacity-80"
-            style={{ background: "radial-gradient(40rem 20rem at 50% 0%, rgba(52,193,123,0.18), transparent 70%)" }}
-          />
-          <div className="relative">
-            <div className="eyebrow">Старт ближайшего потока</div>
-            <h2 className="mx-auto mt-4 max-w-2xl text-3xl font-extrabold leading-tight tracking-tight text-ink sm:text-4xl">
-              Начните путь в профессию финансового аналитика
-            </h2>
-            <p className="mx-auto mt-4 max-w-xl text-base text-ink-secondary sm:text-lg">
-              Оставьте заявку — забронируем место в потоке, ответим на вопросы и расскажем об условиях участия.
-            </p>
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-              <EnrollButton className="px-8 py-4">
-                Записаться на курс
-                <ArrowIcon className="h-4 w-4" />
-              </EnrollButton>
-              <ButtonLink href="/study" variant="secondary" className="px-8 py-4">
-                Посмотреть программу
-              </ButtonLink>
-            </div>
-          </div>
         </div>
       </Container>
     </section>
