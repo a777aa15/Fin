@@ -1,6 +1,8 @@
 import { z } from "zod";
+import { cookies } from "next/headers";
 import { hashPassword, signSession, setSessionCookie, isAdminEmail } from "@/lib/auth";
-import { createUser, findUserByEmail } from "@/lib/repo";
+import { createUser, findUserByEmail, markVisitorConverted } from "@/lib/repo";
+import { VISITOR_COOKIE } from "@/app/api/track/route";
 
 const schema = z.object({
   email: z.email("Некорректный e-mail"),
@@ -38,6 +40,10 @@ export async function POST(req: Request) {
     isAdmin: user.isAdmin,
   });
   await setSessionCookie(token);
+
+  // регистрация = конверсия посетителя
+  const vid = (await cookies()).get(VISITOR_COOKIE)?.value;
+  if (vid) await markVisitorConverted(vid);
 
   return Response.json({
     user: { id: user.id, email: user.email, name: user.name, approved: user.approved, isAdmin: user.isAdmin },

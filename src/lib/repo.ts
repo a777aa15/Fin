@@ -4,7 +4,7 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { getDb } from "./db";
-import { users, leads, lessonProgress, quizAttempt, detectiveAttempt } from "./schema";
+import { users, leads, visitors, lessonProgress, quizAttempt, detectiveAttempt } from "./schema";
 
 export type ProgressSnapshot = {
   lessons: string[];
@@ -76,6 +76,27 @@ export async function createLead(data: { name: string | null; email: string; con
 export async function listLeads() {
   const db = await getDb();
   return db.select().from(leads).orderBy(desc(leads.createdAt));
+}
+
+// ---------- Посетители / конверсия ----------
+export async function trackVisitor(visitorId: string) {
+  const db = await getDb();
+  await db.insert(visitors).values({ visitorId }).onConflictDoNothing({ target: visitors.visitorId });
+}
+
+export async function markVisitorConverted(visitorId: string) {
+  const db = await getDb();
+  // upsert: если посетителя ещё нет (напр. пришёл без беакона) — создаём сразу с конверсией
+  await db
+    .insert(visitors)
+    .values({ visitorId, converted: true })
+    .onConflictDoUpdate({ target: visitors.visitorId, set: { converted: true } });
+}
+
+export async function getVisitorStats(): Promise<{ total: number; converted: number }> {
+  const db = await getDb();
+  const rows = await db.select({ converted: visitors.converted }).from(visitors);
+  return { total: rows.length, converted: rows.filter((r) => r.converted).length };
 }
 
 export async function getUserProgress(userId: string): Promise<ProgressSnapshot> {

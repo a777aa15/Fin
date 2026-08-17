@@ -30,6 +30,13 @@ export const leads = pgTable("leads", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// Посетители сайта (для конверсии). converted = оставил заявку/зарегистрировался.
+export const visitors = pgTable("visitors", {
+  visitorId: text("visitor_id").primaryKey(),
+  converted: boolean("converted").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const lessonProgress = pgTable(
   "lesson_progress",
   {

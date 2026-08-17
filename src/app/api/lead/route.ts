@@ -1,5 +1,7 @@
 import { z } from "zod";
-import { createLead } from "@/lib/repo";
+import { cookies } from "next/headers";
+import { createLead, markVisitorConverted } from "@/lib/repo";
+import { VISITOR_COOKIE } from "@/app/api/track/route";
 
 // Приём заявки с формы записи (лендинг). Публичный роут.
 const schema = z.object({
@@ -21,5 +23,10 @@ export async function POST(req: Request) {
   }
   const { name, email, contact } = parsed.data;
   await createLead({ name: name ?? null, email, contact: contact ?? null });
+
+  // отметить посетителя как «оставил заявку» (для конверсии)
+  const vid = (await cookies()).get(VISITOR_COOKIE)?.value;
+  if (vid) await markVisitorConverted(vid);
+
   return Response.json({ ok: true });
 }

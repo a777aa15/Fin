@@ -6,7 +6,7 @@ import { Container } from "@/components/primitives";
 import { SiteBackground } from "@/components/SiteBackground";
 import { AdminClient } from "@/components/admin/AdminClient";
 import { getCurrentUser } from "@/lib/auth";
-import { listUsers, listLeads } from "@/lib/repo";
+import { listUsers, listLeads, getVisitorStats } from "@/lib/repo";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Админка", robots: { index: false } };
@@ -15,7 +15,9 @@ export default async function AdminPage() {
   const me = await getCurrentUser();
   if (!me?.isAdmin) redirect("/study");
 
-  const [users, leads] = await Promise.all([listUsers(), listLeads()]);
+  const [users, leads, visits] = await Promise.all([listUsers(), listLeads(), getVisitorStats()]);
+  const notConverted = Math.max(0, visits.total - visits.converted);
+  const rate = visits.total ? Math.round((visits.converted / visits.total) * 1000) / 10 : 0;
 
   return (
     <>
@@ -32,6 +34,14 @@ export default async function AdminPage() {
               Одобряйте доступ к курсу вручную — после подтверждения оплаты или заявки.
               Пока не одобрен, пользователь видит только страницу ожидания.
             </p>
+          </div>
+
+          {/* Метрики конверсии */}
+          <div className="mb-10 grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <StatCard value={String(visits.total)} label="посетили сайт" />
+            <StatCard value={String(visits.converted)} label="оставили заявку" accent />
+            <StatCard value={`${rate}%`} label="конверсия" accent />
+            <StatCard value={String(notConverted)} label="ушли без заявки" />
           </div>
           <AdminClient
             users={users.map((u) => ({
@@ -54,5 +64,16 @@ export default async function AdminPage() {
       </main>
       <Footer />
     </>
+  );
+}
+
+function StatCard({ value, label, accent }: { value: string; label: string; accent?: boolean }) {
+  return (
+    <div className="card px-5 py-5 text-center">
+      <div className={`text-3xl font-extrabold tracking-tight ${accent ? "text-green-dark" : "text-ink"}`}>
+        {value}
+      </div>
+      <div className="mt-1 text-xs text-ink-secondary sm:text-sm">{label}</div>
+    </div>
   );
 }

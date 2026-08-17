@@ -52,6 +52,13 @@ async function ensureSchema(db: DrizzleDb) {
     );
   `);
   await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS visitors (
+      visitor_id text PRIMARY KEY,
+      converted boolean NOT NULL DEFAULT false,
+      created_at timestamptz NOT NULL DEFAULT now()
+    );
+  `);
+  await db.execute(sql`
     CREATE TABLE IF NOT EXISTS lesson_progress (
       id text PRIMARY KEY,
       user_id text NOT NULL,

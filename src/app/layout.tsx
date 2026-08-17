@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { ProgressProvider } from "@/lib/progress";
 import { MentorWidget } from "@/components/mentor/MentorWidget";
+import { VisitorTracker } from "@/components/VisitorTracker";
 
 export const metadata: Metadata = {
   title: {
@@ -35,6 +36,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <ProgressProvider>
           {children}
           <MentorWidget />
+          <VisitorTracker />
         </ProgressProvider>
       </body>
     </html>
