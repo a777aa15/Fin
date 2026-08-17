@@ -46,3 +46,6 @@ next-env.d.ts
 
 # Claude Code local tooling (skills, launch config)
 .claude/
+
+# но пример окружения — коммитим
+!.env.example

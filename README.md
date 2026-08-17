@@ -1,36 +1,65 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Финансовый аналитик — онлайн-курс
 
-## Getting Started
+Платформа онлайн-курса «Финансовый аналитик: с нуля до уверенного уровня»
+на Next.js: продающий лендинг, личный кабинет с уроками, тесты, калькуляторы,
+тренажёр «Финансовый детектив», глоссарий и ИИ-наставник.
 
-First, run the development server:
+## Стек
+
+- **Next.js 16** (App Router) + React 19 + TypeScript
+- **Tailwind CSS v4** (тёмная премиум-тема, токены через `@theme` в `globals.css`)
+- **Drizzle ORM** + **PGlite** (локально, Postgres в WASM) / **PostgreSQL** (прод)
+- Аккаунты на собственных сессиях: `bcryptjs` (пароли) + `jose` (JWT в httpOnly-cookie)
+- ИИ-наставник: Google Gemini через SOCKS5-прокси (`socks-proxy-agent`)
+
+## Возможности
+
+- **Лендинг** (`/`) — оффер, результаты, тарифы. Авторизованного редиректит в курс.
+- **Личный кабинет** (за авторизацией): обзор с прогрессом, ридер 148 уроков,
+  доп. материалы, тесты с автопроверкой, 6 калькуляторов (NPV/IRR, WACC, CAPM,
+  точка безубыточности, LTV/CAC, облигация+Фишер), глоссарий, «Финансовый детектив».
+- **ИИ-наставник** — чат в персоне старшего финаналитика, знает контекст урока.
+- **Жёсткий гейт** (`src/middleware.ts`): разделы курса — только для авторизованных.
+- Прогресс/результаты — в БД у залогиненных, перенос гостевого прогресса при входе.
+
+## Быстрый старт
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.example .env.local   # затем заполнить значения (см. ниже)
+npm run dev                  # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Локально БД не нужна: используется PGlite (данные в `./.pglite-data`).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Переменные окружения (`.env.local`)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Переменная | Назначение |
+|---|---|
+| `DATABASE_URL` | Пусто/не задано → PGlite (локально). `postgres://…` → Postgres (прод). |
+| `AUTH_SECRET` | Секрет для подписи JWT-сессий (32+ байт, случайный). |
+| `GEMINI_API_KEY` | Ключ Google AI Studio для наставника. |
+| `MENTOR_PROXY_URL` | `socks5://user:pass@host:port` — прокси для доступа к Gemini. |
+| `MENTOR_MODEL` | Модель Gemini (по умолчанию `gemini-3.6-flash`). |
 
-## Learn More
+Файл `.env.local` — в `.gitignore`, секреты в репозиторий не попадают.
 
-To learn more about Next.js, take a look at the following resources:
+## Контент курса
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Контент лежит в `src/content/data/*.json` и извлекается из прототипа
+`docs/source/course-app_2.html`:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+node scripts/extract-content.mjs
+```
 
-## Deploy on Vercel
+## Сборка и деплой
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+npm run build && npm run start
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Для прода задать `DATABASE_URL` (Postgres), `AUTH_SECRET`, `GEMINI_API_KEY`,
+`MENTOR_PROXY_URL` в окружении сервера/хостинга — код менять не нужно.
+
+Ключевые технические решения — в [DECISIONS.md](DECISIONS.md).
