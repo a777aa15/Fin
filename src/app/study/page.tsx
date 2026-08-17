@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Container } from "@/components/primitives";
+import { SiteBackground } from "@/components/SiteBackground";
 import { StudyOverview, type SlimModule } from "@/components/study/StudyOverview";
 import { modules, getQuiz, getCase } from "@/content/course";
 
@@ -25,6 +26,7 @@ export default function StudyPage() {
 
   return (
     <>
+      <SiteBackground />
       <Header />
       <main className="flex-1">
         <Container className="py-10 sm:py-14">
@@ -38,10 +40,6 @@ export default function StudyPage() {
               компании. Открывайте уроки, проходите тесты и дела детектива, отмечайте
               прогресс.
             </p>
-            <div className="mt-4 rounded-xl border border-dashed border-border bg-card px-4 py-3 text-sm text-ink-muted">
-              Ваш прогресс, результаты тестов и дел сохраняются в аккаунте и доступны
-              с любого устройства после входа.
-            </div>
           </div>
 
           <div className="mt-8">
