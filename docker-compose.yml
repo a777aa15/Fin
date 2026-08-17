@@ -29,12 +29,28 @@ services:
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       MENTOR_PROXY_URL: ${MENTOR_PROXY_URL}
       MENTOR_MODEL: ${MENTOR_MODEL:-gemini-3.6-flash}
-      # HTTP-деплой без HTTPS: Secure-куку браузер бы отбросил. Когда будет
-      # домен + HTTPS (Caddy) — поставить COOKIE_SECURE=true.
-      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      # За HTTPS (Caddy) — Secure-куку можно включить. Для HTTP-режима без домена
+      # переопределите COOKIE_SECURE=false в .env.
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+    expose:
+      - "3000"
+
+  # Reverse-proxy с авто-HTTPS (Let's Encrypt). Требует, чтобы домен из Caddyfile
+  # указывал A-записью на этот сервер, и были открыты порты 80/443.
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - web
     ports:
-      # Сайт будет доступен на http://<ip-сервера>  (порт 80 → приложение 3000)
-      - "80:3000"
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
 
 volumes:
   pgdata:
+  caddy_data:
+  caddy_config:

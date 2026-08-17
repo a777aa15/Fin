@@ -80,17 +80,26 @@ docker compose ps              # статус
 docker compose down            # остановить (данные БД сохраняются в volume)
 ```
 
-## 6. Домен и HTTPS (когда будет домен)
+## 6. Домен и HTTPS (Caddy, авто-сертификат)
 
-Сейчас сайт открыт по IP на порту 80. Для домена и HTTPS:
+В стек уже включён **Caddy** — reverse-proxy с авто-TLS Let's Encrypt.
+Домен и сертификат настраиваются так:
 
-1. Направьте A-запись домена на `31.77.141.114`.
-2. Поставьте перед приложением reverse-proxy (nginx/Caddy) с TLS.
-   Самый простой путь — **Caddy** (авто-TLS Let's Encrypt): в `docker-compose.yml`
-   поменяйте у `web` проброс на `expose: ["3000"]` и добавьте сервис Caddy с
-   `example.com { reverse_proxy web:3000 }`. Скажите — подготовлю этот вариант.
-3. После включения HTTPS поставьте `COOKIE_SECURE=true` в `.env` (по HTTP этот
-   флаг выключен, иначе браузер отбрасывает cookie-сессию и вход не работает).
+1. В DNS домена создайте **A-запись** на IP сервера (`@` → `31.77.141.114`).
+2. Впишите свой домен в `Caddyfile` (по умолчанию — `fincourse.site`).
+3. Откройте порты 80 и 443:
+   ```bash
+   firewall-cmd --permanent --add-port=80/tcp
+   firewall-cmd --permanent --add-port=443/tcp
+   firewall-cmd --reload
+   ```
+4. Запустите: `docker compose up -d --build`. Caddy сам получит сертификат
+   (нужно, чтобы DNS уже указывал на сервер и порты были открыты).
+5. Сайт откроется по `https://<домен>` с валидным сертификатом.
+
+`COOKIE_SECURE` по умолчанию `true` (для HTTPS). Если запускаете без домена по
+голому HTTP — поставьте `COOKIE_SECURE=false` в `.env`, иначе cookie-сессия не
+сохранится и вход не будет работать.
 
 ## Безопасность
 
