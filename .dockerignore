@@ -1,0 +1,13 @@
+node_modules
+.next
+.git
+.pglite-data
+.env
+.env.*
+docs
+README.md
+DECISIONS.md
+DEPLOY.md
+*.md
+npm-debug.log*
+.claude
