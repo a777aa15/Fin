@@ -16,7 +16,22 @@ function secretKey(): Uint8Array {
   return new TextEncoder().encode(secret);
 }
 
-export type SessionUser = { id: string; email: string; name: string | null };
+export type SessionUser = {
+  id: string;
+  email: string;
+  name: string | null;
+  approved: boolean; // есть ли доступ к курсу (одобрен админом/оплатой)
+  isAdmin: boolean;
+};
+
+// Email из ADMIN_EMAILS (через запятую) — админ с авто-доступом.
+export function isAdminEmail(email: string): boolean {
+  const list = (process.env.ADMIN_EMAILS || "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  return list.includes(email.trim().toLowerCase());
+}
 
 export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, 10);
@@ -27,7 +42,12 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 }
 
 export async function signSession(user: SessionUser): Promise<string> {
-  return new SignJWT({ email: user.email, name: user.name })
+  return new SignJWT({
+    email: user.email,
+    name: user.name,
+    approved: user.approved,
+    admin: user.isAdmin,
+  })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(user.id)
     .setIssuedAt()
@@ -72,6 +92,8 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
       id: payload.sub,
       email: (payload.email as string) ?? "",
       name: (payload.name as string | null) ?? null,
+      approved: payload.approved === true,
+      isAdmin: payload.admin === true,
     };
   } catch {
     return null;

@@ -33,10 +33,15 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
         return;
       }
       await refresh(); // подтянуть пользователя + перенести гостевой прогресс
-      // вернуться на исходную страницу (?next=…), только внутренний путь
-      const nextParam = new URLSearchParams(window.location.search).get("next");
-      const dest = nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : "/study";
-      router.push(dest);
+      if (data.user?.approved) {
+        // вернуться на исходную страницу (?next=…), только внутренний путь
+        const nextParam = new URLSearchParams(window.location.search).get("next");
+        const dest = nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : "/study";
+        router.push(dest);
+      } else {
+        // доступ ещё не открыт — на страницу ожидания
+        router.push("/pending");
+      }
     } catch {
       setError("Сеть недоступна. Попробуйте ещё раз.");
       setBusy(false);
@@ -50,8 +55,8 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
       </h1>
       <p className="mt-2 text-sm text-ink-secondary">
         {isRegister
-          ? "Регистрация сохранит ваш прогресс и результаты между устройствами."
-          : "Войдите, чтобы продолжить с сохранённым прогрессом."}
+          ? "Оставьте заявку на обучение — доступ к курсу откроется после подтверждения."
+          : "Войдите, чтобы продолжить обучение."}
       </p>
 
       <form onSubmit={submit} className="mt-6 space-y-4">

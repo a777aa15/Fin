@@ -2,9 +2,9 @@
 
 import "server-only";
 import { randomUUID } from "node:crypto";
-import { and, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { getDb } from "./db";
-import { users, lessonProgress, quizAttempt, detectiveAttempt } from "./schema";
+import { users, leads, lessonProgress, quizAttempt, detectiveAttempt } from "./schema";
 
 export type ProgressSnapshot = {
   lessons: string[];
@@ -21,11 +21,61 @@ export async function findUserByEmail(email: string) {
   return rows[0] ?? null;
 }
 
-export async function createUser(email: string, passwordHash: string, name: string | null) {
+export async function createUser(
+  email: string,
+  passwordHash: string,
+  name: string | null,
+  opts?: { approved?: boolean; isAdmin?: boolean }
+) {
   const db = await getDb();
   const id = randomUUID();
-  await db.insert(users).values({ id, email: email.toLowerCase(), passwordHash, name });
-  return { id, email: email.toLowerCase(), name };
+  const approved = opts?.approved ?? false;
+  const isAdmin = opts?.isAdmin ?? false;
+  await db.insert(users).values({ id, email: email.toLowerCase(), passwordHash, name, approved, isAdmin });
+  return { id, email: email.toLowerCase(), name, approved, isAdmin };
+}
+
+export async function getUserById(id: string) {
+  const db = await getDb();
+  const rows = await db.select().from(users).where(eq(users.id, id)).limit(1);
+  return rows[0] ?? null;
+}
+
+// Одобрить/отозвать доступ к курсу.
+export async function setUserApproved(userId: string, approved: boolean) {
+  const db = await getDb();
+  await db.update(users).set({ approved }).where(eq(users.id, userId));
+}
+
+// Синхронизировать флаги (для email из ADMIN_EMAILS — авто-админ и доступ).
+export async function updateUserAccess(userId: string, patch: { approved?: boolean; isAdmin?: boolean }) {
+  const db = await getDb();
+  await db.update(users).set(patch).where(eq(users.id, userId));
+}
+
+export async function listUsers() {
+  const db = await getDb();
+  return db
+    .select({
+      id: users.id,
+      email: users.email,
+      name: users.name,
+      approved: users.approved,
+      isAdmin: users.isAdmin,
+      createdAt: users.createdAt,
+    })
+    .from(users)
+    .orderBy(desc(users.createdAt));
+}
+
+export async function createLead(data: { name: string | null; email: string; contact: string | null }) {
+  const db = await getDb();
+  await db.insert(leads).values({ id: randomUUID(), name: data.name, email: data.email, contact: data.contact });
+}
+
+export async function listLeads() {
+  const db = await getDb();
+  return db.select().from(leads).orderBy(desc(leads.createdAt));
 }
 
 export async function getUserProgress(userId: string): Promise<ProgressSnapshot> {

@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { verifyPassword, signSession, setSessionCookie } from "@/lib/auth";
-import { findUserByEmail } from "@/lib/repo";
+import { verifyPassword, signSession, setSessionCookie, isAdminEmail } from "@/lib/auth";
+import { findUserByEmail, updateUserAccess } from "@/lib/repo";
 
 const schema = z.object({
   email: z.email("Некорректный e-mail"),
@@ -26,8 +26,17 @@ export async function POST(req: Request) {
     return Response.json({ error: "Неверный e-mail или пароль" }, { status: 401 });
   }
 
-  const token = await signSession({ id: user.id, email: user.email, name: user.name });
+  // Email из ADMIN_EMAILS — авто-админ и доступ (в т.ч. для ранее созданного аккаунта).
+  let approved = user.approved;
+  let isAdmin = user.isAdmin;
+  if (isAdminEmail(user.email) && (!approved || !isAdmin)) {
+    approved = true;
+    isAdmin = true;
+    await updateUserAccess(user.id, { approved: true, isAdmin: true });
+  }
+
+  const token = await signSession({ id: user.id, email: user.email, name: user.name, approved, isAdmin });
   await setSessionCookie(token);
 
-  return Response.json({ user: { id: user.id, email: user.email, name: user.name } });
+  return Response.json({ user: { id: user.id, email: user.email, name: user.name, approved, isAdmin } });
 }

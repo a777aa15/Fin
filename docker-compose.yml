@@ -32,6 +32,8 @@ services:
       # За HTTPS (Caddy) — Secure-куку можно включить. Для HTTP-режима без домена
       # переопределите COOKIE_SECURE=false в .env.
       COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      # E-mail(ы) администраторов через запятую — авто-доступ + панель /admin.
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
     expose:
       - "3000"
 

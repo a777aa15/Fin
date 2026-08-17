@@ -16,7 +16,13 @@ import {
   type ReactNode,
 } from "react";
 
-export type SessionUser = { id: string; email: string; name: string | null };
+export type SessionUser = {
+  id: string;
+  email: string;
+  name: string | null;
+  approved: boolean;
+  isAdmin: boolean;
+};
 export type QuizResult = { score: number; total: number };
 export type CaseResult = {
   found: number;

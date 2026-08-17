@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { hashPassword, signSession, setSessionCookie } from "@/lib/auth";
+import { hashPassword, signSession, setSessionCookie, isAdminEmail } from "@/lib/auth";
 import { createUser, findUserByEmail } from "@/lib/repo";
 
 const schema = z.object({
@@ -27,10 +27,19 @@ export async function POST(req: Request) {
     return Response.json({ error: "Пользователь с таким e-mail уже существует" }, { status: 409 });
   }
 
+  const admin = isAdminEmail(email);
   const passwordHash = await hashPassword(password);
-  const user = await createUser(email, passwordHash, name ?? null);
-  const token = await signSession({ id: user.id, email: user.email, name: user.name });
+  const user = await createUser(email, passwordHash, name ?? null, { approved: admin, isAdmin: admin });
+  const token = await signSession({
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    approved: user.approved,
+    isAdmin: user.isAdmin,
+  });
   await setSessionCookie(token);
 
-  return Response.json({ user: { id: user.id, email: user.email, name: user.name } });
+  return Response.json({
+    user: { id: user.id, email: user.email, name: user.name, approved: user.approved, isAdmin: user.isAdmin },
+  });
 }

@@ -37,8 +37,8 @@ export function Header() {
             </span>
           </Link>
 
-          {/* Вкладки курса — только для авторизованных (личный кабинет) */}
-          {loaded && user ? (
+          {/* Вкладки курса — только для авторизованных И одобренных (личный кабинет) */}
+          {loaded && user?.approved ? (
             <nav className="hidden items-center gap-6 md:flex">
               {NAV.map((item) => {
                 const active = pathname === item.href || pathname.startsWith(item.href + "/");
@@ -62,7 +62,12 @@ export function Header() {
           <div className="hidden items-center gap-3 md:flex">
             {loaded && user ? (
               <>
-                <Link href="/study" className="max-w-[160px] truncate text-sm text-ink-secondary hover:text-ink" title={user.email}>
+                {user.isAdmin ? (
+                  <Link href="/admin" className="text-sm font-medium text-green-dark hover:underline">
+                    Админ
+                  </Link>
+                ) : null}
+                <Link href={user.approved ? "/study" : "/pending"} className="max-w-[160px] truncate text-sm text-ink-secondary hover:text-ink" title={user.email}>
                   {user.name || user.email}
                 </Link>
                 <button onClick={logout} className="text-sm text-ink-muted hover:text-ink">
@@ -95,7 +100,7 @@ export function Header() {
       {menuOpen ? (
         <div className="fixed inset-0 top-14 z-40 bg-surface md:hidden">
           <nav className="flex flex-col gap-1 px-4 py-5">
-            {loaded && user
+            {loaded && user?.approved
               ? NAV.map((item) => (
                   <Link
                     key={item.href}
@@ -107,6 +112,15 @@ export function Header() {
                   </Link>
                 ))
               : null}
+            {loaded && user?.isAdmin ? (
+              <Link
+                href="/admin"
+                onClick={() => setMenuOpen(false)}
+                className="rounded-lg px-3 py-3 text-base font-medium text-green-dark hover:bg-grey-light"
+              >
+                Админ-панель
+              </Link>
+            ) : null}
             <div className="mt-3 space-y-2">
               {loaded && user ? (
                 <button

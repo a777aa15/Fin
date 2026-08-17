@@ -39,6 +39,18 @@ async function ensureSchema(db: DrizzleDb) {
       created_at timestamptz NOT NULL DEFAULT now()
     );
   `);
+  // Гейт доступа: колонки могли отсутствовать в уже созданной таблице.
+  await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS approved boolean NOT NULL DEFAULT false;`);
+  await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin boolean NOT NULL DEFAULT false;`);
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS leads (
+      id text PRIMARY KEY,
+      name text,
+      email text NOT NULL,
+      contact text,
+      created_at timestamptz NOT NULL DEFAULT now()
+    );
+  `);
   await db.execute(sql`
     CREATE TABLE IF NOT EXISTS lesson_progress (
       id text PRIMARY KEY,

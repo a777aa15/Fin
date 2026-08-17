@@ -72,8 +72,18 @@ export function EnrollSection() {
                 </div>
               ) : (
                 <form
-                  onSubmit={(e) => {
+                  onSubmit={async (e) => {
                     e.preventDefault();
+                    // Сохраняем заявку (видна в админке). Ошибку не показываем — есть mailto-фолбэк.
+                    try {
+                      await fetch("/api/lead", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(form),
+                      });
+                    } catch {
+                      /* ignore */
+                    }
                     setSent(true);
                   }}
                   className="space-y-4"

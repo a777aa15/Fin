@@ -1,33 +1,52 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { jwtVerify } from "jose";
+import { jwtVerify, type JWTPayload } from "jose";
 
-// Жёсткий гейт: разделы курса доступны только авторизованным.
-// Гостя перенаправляем на /login?next=<путь>. Проверка сессии — до рендера.
+// Гейт доступа:
+//  • разделы курса — только авторизованным И одобренным (иначе → /pending);
+//  • /admin — только админам;
+//  • неавторизованный → /login?next=<путь>.
+// Проверка сессии — до рендера, по подписанному JWT-cookie.
 
-async function hasValidSession(token: string | undefined): Promise<boolean> {
-  if (!token) return false;
+async function readSession(token: string | undefined): Promise<JWTPayload | null> {
+  if (!token) return null;
   const secret = process.env.AUTH_SECRET;
-  if (!secret) return false;
+  if (!secret) return null;
   try {
-    await jwtVerify(token, new TextEncoder().encode(secret));
-    return true;
+    const { payload } = await jwtVerify(token, new TextEncoder().encode(secret));
+    return payload;
   } catch {
-    return false;
+    return null;
   }
 }
 
 export async function middleware(req: NextRequest) {
-  const token = req.cookies.get("fa_session")?.value;
-  if (await hasValidSession(token)) return NextResponse.next();
+  const payload = await readSession(req.cookies.get("fa_session")?.value);
+  const path = req.nextUrl.pathname;
 
-  const url = req.nextUrl.clone();
-  url.pathname = "/login";
-  url.searchParams.set("next", req.nextUrl.pathname);
-  return NextResponse.redirect(url);
+  const toLogin = () => {
+    const url = req.nextUrl.clone();
+    url.pathname = "/login";
+    url.searchParams.set("next", path);
+    return NextResponse.redirect(url);
+  };
+
+  // Админка
+  if (path === "/admin" || path.startsWith("/admin/")) {
+    if (!payload) return toLogin();
+    if (payload.admin !== true) return NextResponse.redirect(new URL("/study", req.url));
+    return NextResponse.next();
+  }
+
+  // Разделы курса
+  if (!payload) return toLogin();
+  if (payload.approved !== true) {
+    return NextResponse.redirect(new URL("/pending", req.url));
+  }
+  return NextResponse.next();
 }
 
-// Гейтим только разделы курса. Публичны: /, /login, /register, /api/*, статика.
+// Гейтим разделы курса + админку. Публичны: /, /login, /register, /pending, /api/*, статика.
 export const config = {
   matcher: [
     "/study",
@@ -39,5 +58,7 @@ export const config = {
     "/detective/:path*",
     "/glossary",
     "/calculators",
+    "/admin",
+    "/admin/:path*",
   ],
 };
