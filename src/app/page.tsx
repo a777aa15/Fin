@@ -266,7 +266,7 @@ const FEATURES = [
 
 function Format() {
   return (
-    <section id="format" className="scroll-mt-16 border-y border-border bg-card py-14 sm:py-20">
+    <section id="format" className="scroll-mt-16 border-y border-border py-14 sm:py-20">
       <Container size="wide">
         <SectionHeading
           eyebrow="Формат"
@@ -275,7 +275,7 @@ function Format() {
         />
         <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map((f) => (
-            <div key={f.title} className="rounded-xl border border-border bg-surface p-6">
+            <div key={f.title} className="rounded-xl border border-border bg-card/80 p-6 backdrop-blur-sm transition-colors hover:border-green/40">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green text-on-green">
                 <FeatureIcon name={f.icon} />
               </div>
