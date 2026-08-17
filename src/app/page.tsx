@@ -34,9 +34,7 @@ export default function Home() {
 /* -------------------------------------------------------------- HERO */
 function Hero() {
   return (
-    <section className="relative overflow-hidden border-b border-border bg-card">
-      <div aria-hidden className="deco-grid pointer-events-none absolute inset-0 opacity-70" />
-      <div aria-hidden className="deco-glow pointer-events-none absolute inset-x-0 top-0 h-56" />
+    <section className="relative overflow-hidden border-b border-border">
       <Container size="wide" className="relative z-10 py-16 sm:py-20">
         <div className="grid items-center gap-12 lg:grid-cols-[1.1fr_0.9fr]">
           <div>
