@@ -29,6 +29,9 @@ services:
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       MENTOR_PROXY_URL: ${MENTOR_PROXY_URL}
       MENTOR_MODEL: ${MENTOR_MODEL:-gemini-3.6-flash}
+      # HTTP-деплой без HTTPS: Secure-куку браузер бы отбросил. Когда будет
+      # домен + HTTPS (Caddy) — поставить COOKIE_SECURE=true.
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
     ports:
       # Сайт будет доступен на http://<ip-сервера>  (порт 80 → приложение 3000)
       - "80:3000"

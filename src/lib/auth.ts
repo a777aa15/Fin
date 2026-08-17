@@ -35,11 +35,21 @@ export async function signSession(user: SessionUser): Promise<string> {
     .sign(secretKey());
 }
 
+// Флаг Secure: по HTTP браузер отбрасывает Secure-куку, поэтому его можно
+// отключить через COOKIE_SECURE=false (для деплоя без HTTPS). По умолчанию —
+// как раньше (secure в проде). Когда подключим HTTPS/домен — ставим COOKIE_SECURE=true.
+function cookieSecure(): boolean {
+  if (process.env.COOKIE_SECURE !== undefined) {
+    return process.env.COOKIE_SECURE === "true";
+  }
+  return process.env.NODE_ENV === "production";
+}
+
 export async function setSessionCookie(token: string): Promise<void> {
   const store = await cookies();
   store.set(SESSION_COOKIE, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: cookieSecure(),
     sameSite: "lax",
     path: "/",
     maxAge: MAX_AGE,

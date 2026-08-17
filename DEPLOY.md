@@ -89,6 +89,8 @@ docker compose down            # остановить (данные БД сох�
    Самый простой путь — **Caddy** (авто-TLS Let's Encrypt): в `docker-compose.yml`
    поменяйте у `web` проброс на `expose: ["3000"]` и добавьте сервис Caddy с
    `example.com { reverse_proxy web:3000 }`. Скажите — подготовлю этот вариант.
+3. После включения HTTPS поставьте `COOKIE_SECURE=true` в `.env` (по HTTP этот
+   флаг выключен, иначе браузер отбрасывает cookie-сессию и вход не работает).
 
 ## Безопасность
 
