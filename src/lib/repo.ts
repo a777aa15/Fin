@@ -4,7 +4,7 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { getDb } from "./db";
-import { users, leads, visitors, lessonProgress, quizAttempt, detectiveAttempt } from "./schema";
+import { users, leads, visitors, passwordResets, lessonProgress, quizAttempt, detectiveAttempt } from "./schema";
 
 export type ProgressSnapshot = {
   lessons: string[];
@@ -68,9 +68,68 @@ export async function listUsers() {
     .orderBy(desc(users.createdAt));
 }
 
-export async function createLead(data: { name: string | null; email: string; contact: string | null }) {
+// Заявка. Одна на e-mail: если такой email уже есть — не дублируем.
+export async function createLead(data: {
+  name: string | null;
+  email: string | null;
+  contact: string | null;
+  note: string | null;
+}): Promise<{ duplicate: boolean }> {
   const db = await getDb();
-  await db.insert(leads).values({ id: randomUUID(), name: data.name, email: data.email, contact: data.contact });
+  const email = data.email ? data.email.trim().toLowerCase() : null;
+  if (email) {
+    const existing = await db.select({ id: leads.id }).from(leads).where(eq(leads.email, email)).limit(1);
+    if (existing.length) return { duplicate: true };
+  }
+  try {
+    await db.insert(leads).values({ id: randomUUID(), name: data.name, email, contact: data.contact, note: data.note });
+  } catch {
+    // гонка: сработал уникальный индекс по email
+    return { duplicate: true };
+  }
+  return { duplicate: false };
+}
+
+// ---------- Сброс пароля ----------
+export async function createPasswordReset(userId: string): Promise<string> {
+  const db = await getDb();
+  const token = (randomUUID() + randomUUID()).replace(/-/g, "");
+  await db.insert(passwordResets).values({ token, userId });
+  return token;
+}
+
+export async function getValidReset(token: string) {
+  const db = await getDb();
+  const rows = await db.select().from(passwordResets).where(eq(passwordResets.token, token)).limit(1);
+  const r = rows[0];
+  if (!r || r.used) return null;
+  if (Date.now() - new Date(r.createdAt).getTime() > 24 * 60 * 60 * 1000) return null; // 24 ч
+  return r;
+}
+
+export async function consumeReset(token: string) {
+  const db = await getDb();
+  await db.update(passwordResets).set({ used: true }).where(eq(passwordResets.token, token));
+}
+
+export async function updateUserPassword(userId: string, passwordHash: string) {
+  const db = await getDb();
+  await db.update(users).set({ passwordHash }).where(eq(users.id, userId));
+}
+
+export async function listPendingResets() {
+  const db = await getDb();
+  return db
+    .select({
+      token: passwordResets.token,
+      createdAt: passwordResets.createdAt,
+      email: users.email,
+      name: users.name,
+    })
+    .from(passwordResets)
+    .leftJoin(users, eq(passwordResets.userId, users.id))
+    .where(eq(passwordResets.used, false))
+    .orderBy(desc(passwordResets.createdAt));
 }
 
 export async function listLeads() {

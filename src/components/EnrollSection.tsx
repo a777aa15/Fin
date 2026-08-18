@@ -18,6 +18,7 @@ const PERKS = [
 export function EnrollSection() {
   const [form, setForm] = useState({ name: "", email: "", contact: "" });
   const [sent, setSent] = useState(false);
+  const [duplicate, setDuplicate] = useState(false);
 
   const mailtoHref = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
     "Заявка на курс «Финансовый аналитик»"
@@ -62,9 +63,13 @@ export function EnrollSection() {
                       <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </div>
-                  <h3 className="text-xl font-bold text-ink">Заявка принята</h3>
+                  <h3 className="text-xl font-bold text-ink">
+                    {duplicate ? "Заявка уже принята" : "Заявка принята"}
+                  </h3>
                   <p className="mt-2 text-sm text-ink-secondary">
-                    Спасибо, {form.name || "друг"}! Свяжемся с вами по указанному контакту.
+                    {duplicate
+                      ? "С этой почты заявка уже есть — мы обязательно свяжемся."
+                      : `Спасибо, ${form.name || "друг"}! Свяжемся с вами по указанному контакту.`}
                   </p>
                   <a href={mailtoHref} className="btn btn-secondary mt-5">
                     Продублировать письмом
@@ -76,11 +81,13 @@ export function EnrollSection() {
                     e.preventDefault();
                     // Сохраняем заявку (видна в админке). Ошибку не показываем — есть mailto-фолбэк.
                     try {
-                      await fetch("/api/lead", {
+                      const res = await fetch("/api/lead", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify(form),
                       });
+                      const data = await res.json().catch(() => ({}));
+                      setDuplicate(Boolean(data?.duplicate));
                     } catch {
                       /* ignore */
                     }

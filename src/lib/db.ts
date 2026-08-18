@@ -46,15 +46,31 @@ async function ensureSchema(db: DrizzleDb) {
     CREATE TABLE IF NOT EXISTS leads (
       id text PRIMARY KEY,
       name text,
-      email text NOT NULL,
+      email text,
       contact text,
+      note text,
       created_at timestamptz NOT NULL DEFAULT now()
     );
   `);
+  // Совместимость со старой схемой leads.
+  await db.execute(sql`ALTER TABLE leads ALTER COLUMN email DROP NOT NULL;`);
+  await db.execute(sql`ALTER TABLE leads ADD COLUMN IF NOT EXISTS note text;`);
+  // Одна заявка на e-mail: убрать существующие дубли (оставить одну), затем уникальный индекс.
+  await db.execute(sql`DELETE FROM leads a USING leads b WHERE a.email IS NOT NULL AND a.email = b.email AND a.id > b.id;`);
+  await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS uq_leads_email ON leads (email);`);
+
   await db.execute(sql`
     CREATE TABLE IF NOT EXISTS visitors (
       visitor_id text PRIMARY KEY,
       converted boolean NOT NULL DEFAULT false,
+      created_at timestamptz NOT NULL DEFAULT now()
+    );
+  `);
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS password_resets (
+      token text PRIMARY KEY,
+      user_id text NOT NULL,
+      used boolean NOT NULL DEFAULT false,
       created_at timestamptz NOT NULL DEFAULT now()
     );
   `);

@@ -111,6 +111,14 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
         </button>
       </form>
 
+      {!isRegister ? (
+        <p className="mt-3 text-center text-sm">
+          <Link href="/forgot" className="text-ink-secondary hover:text-green-dark">
+            Забыли пароль?
+          </Link>
+        </p>
+      ) : null}
+
       <p className="mt-5 text-center text-sm text-ink-secondary">
         {isRegister ? (
           <>

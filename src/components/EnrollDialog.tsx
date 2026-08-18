@@ -11,6 +11,8 @@ const CONTACT_EMAIL = "hello@example.com"; // ← заменить на реал
 export function EnrollDialog() {
   const [open, setOpen] = useState(false);
   const [sent, setSent] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [duplicate, setDuplicate] = useState(false);
   const [form, setForm] = useState({ name: "", contact: "", goal: "" });
   const firstFieldRef = useRef<HTMLInputElement>(null);
 
@@ -39,9 +41,23 @@ export function EnrollDialog() {
 
   if (!open) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSent(true);
+    setBusy(true);
+    try {
+      const res = await fetch("/api/lead", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: form.name, contact: form.contact, note: form.goal }),
+      });
+      const data = await res.json().catch(() => ({}));
+      setDuplicate(Boolean(data?.duplicate));
+    } catch {
+      /* оффлайн — всё равно покажем подтверждение, есть mailto */
+    } finally {
+      setBusy(false);
+      setSent(true);
+    }
   };
 
   const mailtoHref = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
@@ -66,10 +82,13 @@ export function EnrollDialog() {
                 <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
-            <h3 className="text-xl font-bold text-ink">Заявка принята</h3>
+            <h3 className="text-xl font-bold text-ink">
+              {duplicate ? "Заявка уже принята" : "Заявка принята"}
+            </h3>
             <p className="mt-2 text-sm leading-relaxed text-ink-secondary">
-              Спасибо, {form.name || "друг"}! Мы свяжемся с вами по указанному контакту.
-              Можно продублировать заявку письмом.
+              {duplicate
+                ? "Вы уже оставляли заявку с этим контактом — мы обязательно свяжемся."
+                : `Спасибо, ${form.name || "друг"}! Мы свяжемся с вами по указанному контакту.`}
             </p>
             <a href={mailtoHref} className="btn btn-secondary mt-5">
               Отправить письмом
@@ -101,8 +120,8 @@ export function EnrollDialog() {
                   className="w-full resize-none rounded-lg border border-border bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:border-green focus:outline-none"
                 />
               </div>
-              <button type="submit" className="btn btn-primary w-full">
-                Отправить заявку
+              <button type="submit" disabled={busy} className="btn btn-primary w-full disabled:opacity-60">
+                {busy ? "Отправляем…" : "Отправить заявку"}
               </button>
               <p className="text-center text-xs text-ink-muted">
                 Нажимая кнопку, вы соглашаетесь на обработку контактных данных для связи по курсу.

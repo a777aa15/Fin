@@ -21,12 +21,21 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-// Заявки с формы записи на лендинге (лиды).
+// Заявки с формы записи на лендинге (лиды). Контакт может быть e-mail/телефон/telegram.
 export const leads = pgTable("leads", {
   id: text("id").primaryKey(),
   name: text("name"),
-  email: text("email").notNull(),
+  email: text("email"),
   contact: text("contact"),
+  note: text("note"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Запросы на сброс пароля (токен-ссылку админ передаёт пользователю).
+export const passwordResets = pgTable("password_resets", {
+  token: text("token").primaryKey(),
+  userId: text("user_id").notNull(),
+  used: boolean("used").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

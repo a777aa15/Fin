@@ -6,7 +6,7 @@ import { Container } from "@/components/primitives";
 import { SiteBackground } from "@/components/SiteBackground";
 import { AdminClient } from "@/components/admin/AdminClient";
 import { getCurrentUser } from "@/lib/auth";
-import { listUsers, listLeads, getVisitorStats } from "@/lib/repo";
+import { listUsers, listLeads, getVisitorStats, listPendingResets } from "@/lib/repo";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Админка", robots: { index: false } };
@@ -15,7 +15,12 @@ export default async function AdminPage() {
   const me = await getCurrentUser();
   if (!me?.isAdmin) redirect("/study");
 
-  const [users, leads, visits] = await Promise.all([listUsers(), listLeads(), getVisitorStats()]);
+  const [users, leads, visits, resets] = await Promise.all([
+    listUsers(),
+    listLeads(),
+    getVisitorStats(),
+    listPendingResets(),
+  ]);
   const notConverted = Math.max(0, visits.total - visits.converted);
   const rate = visits.total ? Math.round((visits.converted / visits.total) * 1000) / 10 : 0;
 
@@ -57,7 +62,14 @@ export default async function AdminPage() {
               name: l.name,
               email: l.email,
               contact: l.contact,
+              note: l.note,
               createdAt: l.createdAt.toISOString(),
+            }))}
+            resets={resets.map((r) => ({
+              token: r.token,
+              email: r.email,
+              name: r.name,
+              createdAt: r.createdAt.toISOString(),
             }))}
           />
         </Container>
