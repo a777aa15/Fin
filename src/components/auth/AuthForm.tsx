@@ -109,6 +109,16 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
         <button type="submit" disabled={busy} className="btn btn-primary w-full disabled:opacity-60">
           {busy ? "Подождите…" : isRegister ? "Зарегистрироваться" : "Войти"}
         </button>
+
+        {isRegister ? (
+          <p className="text-center text-xs text-ink-muted">
+            Регистрируясь, вы соглашаетесь на обработку персональных данных согласно{" "}
+            <Link href="/privacy" className="underline hover:text-green-dark">
+              политике конфиденциальности
+            </Link>
+            .
+          </p>
+        ) : null}
       </form>
 
       {!isRegister ? (

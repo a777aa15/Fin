@@ -57,7 +57,12 @@ export function Footer() {
 
         <div className="mt-10 flex flex-col items-start justify-between gap-3 border-t border-border pt-6 text-sm text-ink-muted sm:flex-row sm:items-center">
           <p>© {new Date().getFullYear()} Курс «Финансовый аналитик»</p>
-          <p>15 модулей · 148 уроков</p>
+          <div className="flex items-center gap-4">
+            <Link href="/privacy" className="transition-colors hover:text-green-dark">
+              Политика конфиденциальности
+            </Link>
+            <span className="hidden sm:inline">15 модулей · 148 уроков</span>
+          </div>
         </div>
       </div>
     </footer>

@@ -102,6 +102,32 @@ docker compose down            # остановить (данные БД сох�
 Затем `docker compose up -d --build`. Проверьте: `/forgot` → письмо со ссылкой.
 Если письма не уходят (провайдер блокирует SMTP с сервера) — попробуйте Яндекс/Mail.ru.
 
+## 5б. Бэкапы базы данных
+
+В базе живут аккаунты, прогресс обучения и заявки — их стоит копировать ежедневно.
+
+**Разовый бэкап:**
+```bash
+cd ~/Fin && ./scripts/backup-db.sh
+```
+Копия появится в `~/Fin/backups/finansist_ГГГГ-ММ-ДД_ЧЧ-ММ.sql.gz`.
+Копии старше 14 дней удаляются автоматически (меняется через `KEEP_DAYS`).
+
+**Автоматически каждый день в 3:30** — добавьте задание в cron:
+```bash
+(crontab -l 2>/dev/null; echo "30 3 * * * cd ~/Fin && ./scripts/backup-db.sh >> ~/Fin/backups/backup.log 2>&1") | crontab -
+```
+Проверить, что задание добавлено: `crontab -l`
+
+**Восстановление из копии** (данные в БД будут заменены):
+```bash
+cd ~/Fin
+gunzip -c backups/finansist_2026-08-18_03-30.sql.gz | docker compose exec -T db psql -U finansist -d finansist
+```
+
+> Копии лежат на том же сервере. Для защиты от потери самого сервера
+> периодически скачивайте их к себе: `scp root@31.77.141.114:~/Fin/backups/*.gz .`
+
 ## 6. Домен и HTTPS (Caddy, авто-сертификат)
 
 В стек уже включён **Caddy** — reverse-proxy с авто-TLS Let's Encrypt.

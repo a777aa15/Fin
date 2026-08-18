@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { hashPassword, signSession, setSessionCookie, isAdminEmail } from "@/lib/auth";
 import { createUser, findUserByEmail, markVisitorConverted } from "@/lib/repo";
 import { VISITOR_COOKIE } from "@/app/api/track/route";
+import { sendRegistrationReceived, sendInBackground } from "@/lib/emails";
 
 const schema = z.object({
   email: z.email("Некорректный e-mail"),
@@ -44,6 +45,12 @@ export async function POST(req: Request) {
   // регистрация = конверсия посетителя
   const vid = (await cookies()).get(VISITOR_COOKIE)?.value;
   if (vid) await markVisitorConverted(vid);
+
+  // Письмо «заявка принята» — только тем, кто ждёт одобрения (админу не нужно).
+  // Отправка фоном, чтобы регистрация завершалась мгновенно.
+  if (!user.approved) {
+    sendInBackground(() => sendRegistrationReceived({ email: user.email, name: user.name }));
+  }
 
   return Response.json({
     user: { id: user.id, email: user.email, name: user.name, approved: user.approved, isAdmin: user.isAdmin },

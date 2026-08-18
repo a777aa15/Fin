@@ -124,7 +124,11 @@ export function EnrollDialog() {
                 {busy ? "Отправляем…" : "Отправить заявку"}
               </button>
               <p className="text-center text-xs text-ink-muted">
-                Нажимая кнопку, вы соглашаетесь на обработку контактных данных для связи по курсу.
+                Нажимая кнопку, вы соглашаетесь на обработку контактных данных согласно{" "}
+                <a href="/privacy" target="_blank" className="underline hover:text-green-dark">
+                  политике конфиденциальности
+                </a>
+                .
               </p>
             </form>
           </>

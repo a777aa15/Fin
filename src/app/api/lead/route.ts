@@ -2,6 +2,7 @@ import { z } from "zod";
 import { cookies } from "next/headers";
 import { createLead, markVisitorConverted } from "@/lib/repo";
 import { VISITOR_COOKIE } from "@/app/api/track/route";
+import { notifyAdminNewLead, sendInBackground } from "@/lib/emails";
 
 // Приём заявки с формы записи (лендинг/модалка). Публичный роут.
 const schema = z
@@ -45,6 +46,19 @@ export async function POST(req: Request) {
   // отметить посетителя как «оставил заявку» (для конверсии)
   const vid = (await cookies()).get(VISITOR_COOKIE)?.value;
   if (vid) await markVisitorConverted(vid);
+
+  // Уведомить админа (только о новой заявке). Письмо уходит фоном —
+  // пользователь получает подтверждение мгновенно.
+  if (!duplicate) {
+    sendInBackground(() =>
+      notifyAdminNewLead({
+        name: name ?? null,
+        email: email ?? null,
+        contact: contact ?? null,
+        note: note ?? null,
+      })
+    );
+  }
 
   return Response.json({ ok: true, duplicate });
 }

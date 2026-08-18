@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { getVerifiedUser } from "@/lib/auth";
-import { setUserApproved } from "@/lib/repo";
+import { setUserApproved, getUserById } from "@/lib/repo";
+import { sendAccessGranted, sendInBackground } from "@/lib/emails";
 
 // Одобрить/отозвать доступ пользователя. Только для админа.
 const schema = z.object({
@@ -24,6 +25,13 @@ export async function POST(req: Request) {
     return Response.json({ error: "Ошибка данных" }, { status: 400 });
   }
 
+  // Письмо об открытии доступа шлём только при переходе «не одобрен → одобрен».
+  const before = await getUserById(parsed.data.userId);
   await setUserApproved(parsed.data.userId, parsed.data.approved);
+
+  if (parsed.data.approved && before && !before.approved) {
+    sendInBackground(() => sendAccessGranted({ email: before.email, name: before.name }));
+  }
+
   return Response.json({ ok: true });
 }
