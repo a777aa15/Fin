@@ -155,7 +155,8 @@ export function NotesWidget() {
 
   return (
     <>
-      {/* Язычок */}
+      {/* Язычок (прячется, когда окно открыто) */}
+      {!open && (
       <button
         onPointerDown={onTabDown}
         onPointerMove={onTabMove}
@@ -182,6 +183,7 @@ export function NotesWidget() {
           Заметки
         </span>
       </button>
+      )}
 
       {/* Окно (в стиле macOS) */}
       <div
@@ -191,10 +193,10 @@ export function NotesWidget() {
           left: win.x,
           top: win.y,
           transformOrigin: tab.side === "left" ? "top left" : "top right",
-          transitionTimingFunction: "cubic-bezier(0.2, 0.9, 0.25, 1.25)",
+          transitionTimingFunction: "cubic-bezier(0.16, 1, 0.3, 1)",
         }}
-        className={`fixed z-50 flex h-[400px] w-[320px] max-w-[90vw] flex-col overflow-hidden rounded-xl border border-white/10 shadow-2xl transition-[transform,opacity] duration-300 ${
-          open ? "scale-100 opacity-100" : "pointer-events-none scale-90 opacity-0"
+        className={`fixed z-50 flex h-[400px] w-[320px] max-w-[90vw] flex-col overflow-hidden rounded-xl border border-white/10 shadow-2xl transition-[transform,opacity] duration-500 ${
+          open ? "scale-100 opacity-100" : "pointer-events-none scale-95 opacity-0"
         }`}
       >
         {/* Стекло-фон окна */}
@@ -208,38 +210,36 @@ export function NotesWidget() {
           className="flex h-10 shrink-0 cursor-grab touch-none items-center border-b border-white/10 px-3.5 active:cursor-grabbing"
           style={{ touchAction: "none" }}
         >
-          {/* Светофор */}
-          <div className="flex items-center gap-2" onPointerDown={(e) => e.stopPropagation()}>
-            <button
-              onClick={() => setOpen(false)}
-              aria-label="Закрыть"
-              className="group/dot flex h-3 w-3 items-center justify-center rounded-full bg-[#ff5f57]"
-            >
-              <svg viewBox="0 0 10 10" className="h-2 w-2 opacity-0 group-hover/dot:opacity-100" stroke="#7a0d0a" strokeWidth="1.4">
-                <path d="M2.5 2.5l5 5M7.5 2.5l-5 5" strokeLinecap="round" />
+          {/* Слева: назад (в редакторе) или иконка */}
+          <div className="flex items-center" onPointerDown={(e) => e.stopPropagation()}>
+            {active ? (
+              <button onClick={() => setActiveId(null)} aria-label="К списку" className="flex items-center gap-1 text-[13px] text-[#e9c14a] hover:text-[#f2cf63]">
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                Заметки
+              </button>
+            ) : (
+              <svg viewBox="0 0 24 24" className="h-[18px] w-[18px] text-[#e9c14a]" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+                <path d="M4 5a2 2 0 012-2h9l5 5v11a2 2 0 01-2 2H6a2 2 0 01-2-2z" strokeLinejoin="round" />
+                <path d="M8 8h6M8 12h8M8 16h5" strokeLinecap="round" />
               </svg>
-            </button>
-            <span className="h-3 w-3 rounded-full bg-[#febc2e]" />
-            <span className="h-3 w-3 rounded-full bg-[#28c840]" />
+            )}
           </div>
           <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 text-[13px] font-semibold text-white/80">
             {active ? "Заметка" : "Заметки"}
           </div>
           <div className="ml-auto flex items-center gap-1" onPointerDown={(e) => e.stopPropagation()}>
             {active ? (
-              <>
-                <button onClick={() => setActiveId(null)} aria-label="К списку" className="flex h-7 w-7 items-center justify-center rounded-md text-white/60 hover:bg-white/10 hover:text-white">
-                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                </button>
-                <button onClick={() => remove(active.id)} aria-label="Удалить" className="flex h-7 w-7 items-center justify-center rounded-md text-white/60 hover:bg-white/10 hover:text-[#ff6b6b]">
-                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                </button>
-              </>
+              <button onClick={() => remove(active.id)} aria-label="Удалить" className="flex h-7 w-7 items-center justify-center rounded-md text-white/60 hover:bg-white/10 hover:text-[#ff6b6b]">
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              </button>
             ) : (
               <button onClick={newNote} aria-label="Новая заметка" className="flex h-7 w-7 items-center justify-center rounded-md text-[#e9c14a] hover:bg-white/10">
                 <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14" strokeLinecap="round" /></svg>
               </button>
             )}
+            <button onClick={() => setOpen(false)} aria-label="Закрыть" className="flex h-7 w-7 items-center justify-center rounded-md text-white/55 transition-colors hover:bg-white/10 hover:text-white">
+              <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" /></svg>
+            </button>
           </div>
         </div>
 
