@@ -37,10 +37,10 @@ export default function ForgotPage() {
           <div className="w-full max-w-sm">
             {sent ? (
               <div className="card p-8 text-center">
-                <h1 className="text-xl font-extrabold text-ink">Запрос отправлен</h1>
+                <h1 className="text-xl font-extrabold text-ink">Проверьте почту</h1>
                 <p className="mt-3 text-sm leading-relaxed text-ink-secondary">
-                  Если аккаунт с этой почтой существует, мы свяжемся с вами и пришлём
-                  ссылку для сброса пароля. Проверьте контакт, который вы оставляли.
+                  Если аккаунт с этой почтой существует, мы отправили на неё ссылку для
+                  сброса пароля. Проверьте входящие и папку «Спам» — ссылка действует 24 часа.
                 </p>
                 <Link href="/login" className="btn btn-secondary mt-6">
                   Вернуться ко входу
