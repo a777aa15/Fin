@@ -4,9 +4,8 @@ import { useState } from "react";
 import { Container } from "./primitives";
 
 // Плашка записи на курс (формат один — тарифов нет).
-// Лид-форма без бэкенда: показывает подтверждение + mailto-фолбэк.
-// TODO(CRM/оплата): заменить handleSubmit на реальную отправку заявки.
-const CONTACT_EMAIL = "hello@example.com"; // ← заменить на реальный адрес
+// Заявка уходит в /api/lead и видна в админке; дубли по e-mail не создаются.
+const CONTACT_EMAIL = "fincourse1@yandex.ru";
 
 const PERKS = [
   "Личный ИИ-наставник",

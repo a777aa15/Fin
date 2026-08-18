@@ -3,16 +3,15 @@ import { redirect } from "next/navigation";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Container } from "@/components/primitives";
-import { SiteBackground } from "@/components/SiteBackground";
 import { AdminClient } from "@/components/admin/AdminClient";
-import { getCurrentUser } from "@/lib/auth";
+import { getVerifiedUser } from "@/lib/auth";
 import { listUsers, listLeads, getVisitorStats, listPendingResets } from "@/lib/repo";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Админка", robots: { index: false } };
 
 export default async function AdminPage() {
-  const me = await getCurrentUser();
+  const me = await getVerifiedUser();
   if (!me?.isAdmin) redirect("/study");
 
   const [users, leads, visits, resets] = await Promise.all([
@@ -26,7 +25,6 @@ export default async function AdminPage() {
 
   return (
     <>
-      <SiteBackground />
       <Header />
       <main className="flex-1">
         <Container className="py-10 sm:py-14">

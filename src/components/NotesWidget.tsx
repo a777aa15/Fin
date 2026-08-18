@@ -15,6 +15,26 @@ type WinPos = { x: number; y: number };
 
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 
+// Реальная ширина/высота окна заметок (на узких экранах — 90vw).
+const WIN_H = 400;
+function winSize() {
+  if (typeof window === "undefined") return { w: 320, h: WIN_H };
+  return { w: Math.min(320, window.innerWidth * 0.9), h: WIN_H };
+}
+// Вписать окно в видимую область, чтобы оно не создавало горизонтальный скролл.
+function fitWin(p: WinPos): WinPos {
+  if (typeof window === "undefined") return p;
+  const { w, h } = winSize();
+  return {
+    x: clamp(p.x, 8, Math.max(8, window.innerWidth - w - 8)),
+    y: clamp(p.y, 8, Math.max(8, window.innerHeight - h - 8)),
+  };
+}
+function fitTab(p: TabPos): TabPos {
+  if (typeof window === "undefined") return p;
+  return { side: p.side, y: clamp(p.y, 48, Math.max(48, window.innerHeight - 48)) };
+}
+
 function fmtDate(ts: number): string {
   const d = new Date(ts);
   const sameDay = d.toDateString() === new Date().toDateString();
@@ -44,19 +64,34 @@ export function NotesWidget() {
     if (!storageKey) return;
     try {
       const raw = localStorage.getItem(storageKey);
+      // localStorage недоступен при SSR, а ключ зависит от пользователя —
+      // поэтому заметки читаются здесь, после монтирования.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setNotes(raw ? (JSON.parse(raw) as Note[]) : []);
     } catch {
       setNotes([]);
     }
     try {
       const t = localStorage.getItem("fa-notes-tab");
-      if (t) setTab(JSON.parse(t));
+      if (t) setTab(fitTab(JSON.parse(t)));
       const w = localStorage.getItem("fa-notes-win");
-      if (w) setWin(JSON.parse(w));
+      if (w) setWin(fitWin(JSON.parse(w)));
     } catch {
       /* ignore */
     }
   }, [storageKey]);
+
+  // Держим окно и язычок в пределах экрана: позиция могла сохраниться на
+  // широком мониторе, а открыться на телефоне — иначе появлялся горизонтальный скролл.
+  useEffect(() => {
+    const onResize = () => {
+      setWin((p) => fitWin(p));
+      setTab((p) => fitTab(p));
+    };
+    onResize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   useEffect(() => {
     if (open && activeId) editorRef.current?.focus();
@@ -136,10 +171,7 @@ export function NotesWidget() {
   };
   const onWinMove = (e: React.PointerEvent) => {
     if (!winRef.current.down) return;
-    setWin({
-      x: clamp(e.clientX - winRef.current.ox, 4, window.innerWidth - 120),
-      y: clamp(e.clientY - winRef.current.oy, 4, window.innerHeight - 60),
-    });
+    setWin(fitWin({ x: e.clientX - winRef.current.ox, y: e.clientY - winRef.current.oy }));
   };
   const onWinUp = () => {
     if (!winRef.current.down) return;

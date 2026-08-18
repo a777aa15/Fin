@@ -5,7 +5,6 @@ import { useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Container } from "@/components/primitives";
-import { SiteBackground } from "@/components/SiteBackground";
 
 export default function ForgotPage() {
   const [email, setEmail] = useState("");
@@ -30,7 +29,6 @@ export default function ForgotPage() {
 
   return (
     <>
-      <SiteBackground />
       <Header />
       <main className="flex-1">
         <Container className="flex min-h-[70vh] items-center justify-center py-16">

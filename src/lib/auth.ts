@@ -99,3 +99,35 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
     return null;
   }
 }
+
+// Пользователь с ПРОВЕРКОЙ ПО БД (не по кэшу в JWT).
+// Нужно там, где решается доступ: отзыв прав должен действовать сразу,
+// а не через 30 дней (срок жизни токена). Если статус в БД разошёлся с
+// токеном — сессия переподписывается, чтобы middleware тоже увидел изменение.
+export async function getVerifiedUser(): Promise<SessionUser | null> {
+  const fromToken = await getCurrentUser();
+  if (!fromToken) return null;
+
+  const { getUserById, updateUserAccess } = await import("./repo");
+  const db = await getUserById(fromToken.id);
+  if (!db) {
+    // пользователя удалили — сессию гасим
+    await clearSessionCookie();
+    return null;
+  }
+
+  let approved = db.approved;
+  let isAdmin = db.isAdmin;
+  // Почта из ADMIN_EMAILS всегда получает админ-доступ.
+  if (isAdminEmail(db.email) && (!approved || !isAdmin)) {
+    approved = true;
+    isAdmin = true;
+    await updateUserAccess(db.id, { approved: true, isAdmin: true });
+  }
+
+  const fresh: SessionUser = { id: db.id, email: db.email, name: db.name, approved, isAdmin };
+  if (fromToken.approved !== approved || fromToken.isAdmin !== isAdmin) {
+    await setSessionCookie(await signSession(fresh));
+  }
+  return fresh;
+}

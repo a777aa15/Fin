@@ -4,8 +4,11 @@ import { ProgressProvider } from "@/lib/progress";
 import { MentorWidget } from "@/components/mentor/MentorWidget";
 import { NotesWidget } from "@/components/NotesWidget";
 import { VisitorTracker } from "@/components/VisitorTracker";
+import { SiteBackground } from "@/components/SiteBackground";
+import { siteUrl } from "@/lib/site";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl()),
   title: {
     default: "Финансовый аналитик — курс с нуля до уверенного уровня",
     template: "%s · Финансовый аналитик",
@@ -35,6 +38,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="ru" className="h-full">
       <body className="min-h-full flex flex-col antialiased">
         <ProgressProvider>
+          {/* Декоративный фон — один на весь сайт (страницы его не дублируют) */}
+          <SiteBackground />
           {children}
           <MentorWidget />
           <NotesWidget />

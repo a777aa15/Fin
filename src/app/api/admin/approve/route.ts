@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { getCurrentUser } from "@/lib/auth";
+import { getVerifiedUser } from "@/lib/auth";
 import { setUserApproved } from "@/lib/repo";
 
 // Одобрить/отозвать доступ пользователя. Только для админа.
@@ -9,7 +9,8 @@ const schema = z.object({
 });
 
 export async function POST(req: Request) {
-  const me = await getCurrentUser();
+  // Права админа сверяются с БД — отзыв админки действует сразу.
+  const me = await getVerifiedUser();
   if (!me?.isAdmin) return Response.json({ error: "Доступ запрещён" }, { status: 403 });
 
   let body: unknown;

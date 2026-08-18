@@ -1,6 +1,11 @@
+"use client";
+
 import Link from "next/link";
+import { useAuth } from "@/lib/progress";
 
 export function Footer() {
+  const { user, loaded } = useAuth();
+  const hasCourse = loaded && !!user?.approved;
   return (
     <footer className="mt-20 border-t border-border bg-card">
       <div className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6">
@@ -21,14 +26,23 @@ export function Footer() {
             </p>
           </div>
 
+          {/* Разделы курса — только тем, у кого открыт доступ */}
           <FooterCol
-            title="Курс"
-            links={[
-              { label: "Обзор курса", href: "/study" },
-              { label: "Калькуляторы", href: "/calculators" },
-              { label: "Глоссарий", href: "/glossary" },
-              { label: "Финансовый детектив", href: "/detective" },
-            ]}
+            title={hasCourse ? "Курс" : "Аккаунт"}
+            links={
+              hasCourse
+                ? [
+                    { label: "Обзор курса", href: "/study" },
+                    { label: "Калькуляторы", href: "/calculators" },
+                    { label: "Глоссарий", href: "/glossary" },
+                    { label: "Финансовый детектив", href: "/detective" },
+                  ]
+                : [
+                    { label: "Войти", href: "/login" },
+                    { label: "Регистрация", href: "/register" },
+                    { label: "Забыли пароль", href: "/forgot" },
+                  ]
+            }
           />
           <FooterCol
             title="Разделы"

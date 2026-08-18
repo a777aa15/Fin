@@ -153,6 +153,9 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
   }, [applySnapshot]);
 
   useEffect(() => {
+    // Загрузка сессии и прогресса при монтировании: /api/me доступен только
+    // на клиенте, поэтому состояние заполняется именно здесь.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refresh();
   }, [refresh]);
 

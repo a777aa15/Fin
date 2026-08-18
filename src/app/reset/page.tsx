@@ -6,7 +6,6 @@ import { Suspense, useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Container } from "@/components/primitives";
-import { SiteBackground } from "@/components/SiteBackground";
 
 function ResetInner() {
   const router = useRouter();
@@ -120,7 +119,6 @@ function ResetInner() {
 export default function ResetPage() {
   return (
     <>
-      <SiteBackground />
       <Header />
       <main className="flex-1">
         <Container className="flex min-h-[70vh] items-center justify-center py-16">

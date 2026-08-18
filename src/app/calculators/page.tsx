@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Container } from "@/components/primitives";
-import { SiteBackground } from "@/components/SiteBackground";
 import { CalculatorsClient } from "@/components/CalculatorsClient";
 
 export const metadata: Metadata = {
@@ -14,7 +13,6 @@ export const metadata: Metadata = {
 export default function CalculatorsPage() {
   return (
     <>
-      <SiteBackground />
       <Header />
       <main className="flex-1">
         <Container className="py-10 sm:py-14">

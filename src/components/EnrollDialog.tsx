@@ -3,10 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { ENROLL_EVENT } from "./EnrollButton";
 
-// Модалка записи на курс.
-// v1: собирает заявку без бэкенда и показывает подтверждение + mailto-фолбэк.
-// TODO(монетизация/CRM): здесь точка подключения оплаты или отправки лида на эндпойнт.
-const CONTACT_EMAIL = "hello@example.com"; // ← заменить на реальный адрес
+// Модалка записи на курс: сохраняет заявку через /api/lead (видна в /admin),
+// показывает подтверждение и mailto-фолбэк. Одна заявка на контакт (дедуп по e-mail).
+// Точка подключения оплаты — здесь же, после успешного ответа API.
+const CONTACT_EMAIL = "fincourse1@yandex.ru";
 
 export function EnrollDialog() {
   const [open, setOpen] = useState(false);

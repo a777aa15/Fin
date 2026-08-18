@@ -5,14 +5,12 @@ import { EnrollButton } from "@/components/EnrollButton";
 import { EnrollSection } from "@/components/EnrollSection";
 import { Container, SectionHeading, ArrowIcon, CheckIcon } from "@/components/primitives";
 import { RedirectIfAuthed } from "@/components/RedirectIfAuthed";
-import { SiteBackground } from "@/components/SiteBackground";
 import { courseFacts } from "@/content/course";
 
 export default function Home() {
   return (
     <>
       <RedirectIfAuthed />
-      <SiteBackground />
       <Header />
       <main className="flex-1">
         <Hero />

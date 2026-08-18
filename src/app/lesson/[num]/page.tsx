@@ -90,7 +90,7 @@ export default async function LessonPage({ params }: { params: Promise<Params> }
           {/* Навигация между уроками */}
           <nav className="mt-10 grid gap-3 border-t border-border pt-6 sm:grid-cols-2">
             {prev ? (
-              <Link href={`/lesson/${prev.num}`} className="group card flex items-center gap-3 p-4 hover:border-green/50">
+              <Link href={`/lesson/${prev.num}`} className="group card flex min-w-0 items-center gap-3 p-4 hover:border-green/50">
                 <ArrowIcon className="h-5 w-5 shrink-0 rotate-180 text-ink-muted group-hover:text-green-dark" />
                 <span className="min-w-0">
                   <span className="block text-xs text-ink-muted">Предыдущий урок</span>
@@ -100,7 +100,7 @@ export default async function LessonPage({ params }: { params: Promise<Params> }
             ) : <span className="hidden sm:block" />}
 
             {next ? (
-              <Link href={`/lesson/${next.num}`} className="group card flex items-center justify-end gap-3 p-4 text-right hover:border-green/50">
+              <Link href={`/lesson/${next.num}`} className="group card flex min-w-0 items-center justify-end gap-3 p-4 text-right hover:border-green/50">
                 <span className="min-w-0">
                   <span className="block text-xs text-ink-muted">Следующий урок</span>
                   <span className="mt-0.5 block truncate text-sm font-semibold text-ink">{next.num} {next.title}</span>
@@ -108,7 +108,7 @@ export default async function LessonPage({ params }: { params: Promise<Params> }
                 <ArrowIcon className="h-5 w-5 shrink-0 text-ink-muted group-hover:text-green-dark" />
               </Link>
             ) : (
-              <Link href="/study" className="group card flex items-center justify-end gap-3 p-4 text-right hover:border-green/50">
+              <Link href="/study" className="group card flex min-w-0 items-center justify-end gap-3 p-4 text-right hover:border-green/50">
                 <span className="min-w-0">
                   <span className="block text-xs text-ink-muted">Курс пройден</span>
                   <span className="mt-0.5 block text-sm font-semibold text-green-dark">Вернуться к обзору</span>

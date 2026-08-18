@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { getCurrentUser } from "@/lib/auth";
+import { getVerifiedUser } from "@/lib/auth";
 import { setLessonDone, saveQuizAttempt, saveCaseAttempt } from "@/lib/repo";
 
 const schema = z.discriminatedUnion("kind", [
@@ -16,8 +16,9 @@ const schema = z.discriminatedUnion("kind", [
 ]);
 
 export async function POST(req: Request) {
-  const user = await getCurrentUser();
+  const user = await getVerifiedUser();
   if (!user) return Response.json({ error: "Требуется вход" }, { status: 401 });
+  if (!user.approved) return Response.json({ error: "Доступ к курсу не открыт" }, { status: 403 });
 
   let body: unknown;
   try {

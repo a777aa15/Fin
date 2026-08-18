@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Container } from "@/components/primitives";
-import { SiteBackground } from "@/components/SiteBackground";
 import { StudyOverview, type SlimModule } from "@/components/study/StudyOverview";
 import { modules, getQuiz, getCase } from "@/content/course";
 
@@ -26,7 +25,6 @@ export default function StudyPage() {
 
   return (
     <>
-      <SiteBackground />
       <Header />
       <main className="flex-1">
         <Container className="py-10 sm:py-14">

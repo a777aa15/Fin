@@ -3,7 +3,7 @@ import { z } from "zod";
 import { SocksProxyAgent } from "socks-proxy-agent";
 import { buildMentorSystemPrompt, type LessonContext } from "@/lib/mentor-prompt";
 import { getLessonByNum } from "@/content/course";
-import { getCurrentUser } from "@/lib/auth";
+import { getVerifiedUser } from "@/lib/auth";
 
 const schema = z.object({
   messages: z
@@ -64,10 +64,14 @@ function proxiedPostJson(
 }
 
 export async function POST(req: Request) {
-  // Наставник — только для авторизованных (защита платного ключа/прокси).
-  const currentUser = await getCurrentUser();
+  // Наставник — только для авторизованных И одобренных: иначе любой
+  // зарегистрировавшийся мог бы расходовать платный ключ Gemini без доступа к курсу.
+  const currentUser = await getVerifiedUser();
   if (!currentUser) {
     return Response.json({ error: "Войдите, чтобы задавать вопросы наставнику." }, { status: 401 });
+  }
+  if (!currentUser.approved) {
+    return Response.json({ error: "Наставник доступен после открытия доступа к курсу." }, { status: 403 });
   }
 
   const apiKey = process.env.GEMINI_API_KEY;

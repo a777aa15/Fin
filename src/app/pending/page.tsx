@@ -5,7 +5,6 @@ import { useCallback, useEffect, useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Container } from "@/components/primitives";
-import { SiteBackground } from "@/components/SiteBackground";
 import { useAuth } from "@/lib/progress";
 
 export default function PendingPage() {
@@ -47,7 +46,6 @@ export default function PendingPage() {
 
   return (
     <>
-      <SiteBackground />
       <Header />
       <main className="flex-1">
         <Container className="py-16 sm:py-24">
