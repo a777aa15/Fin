@@ -99,6 +99,19 @@ function Icon({ name, className }: { name: string; className?: string }) {
   }
 }
 
+// Красивая математическая вёрстка формул (дроби, курсив, индексы).
+function Fml({ children }: { children: ReactNode }) {
+  return <span className="fml">{children}</span>;
+}
+function Frac({ n, d }: { n: ReactNode; d: ReactNode }) {
+  return (
+    <span className="frac">
+      <span>{n}</span>
+      <span>{d}</span>
+    </span>
+  );
+}
+
 function CalcShell({
   title,
   formula,
@@ -108,7 +121,7 @@ function CalcShell({
   note,
 }: {
   title: string;
-  formula: string;
+  formula: ReactNode;
   icon: string;
   inputs: ReactNode;
   results: ReactNode;
@@ -123,9 +136,7 @@ function CalcShell({
         </span>
         <div className="min-w-0">
           <h3 className="text-lg font-bold text-ink">{title}</h3>
-          <code className="mt-1 inline-block max-w-full truncate rounded-md bg-grey-light px-2 py-0.5 font-mono text-xs text-green-dark">
-            {formula}
-          </code>
+          <div className="mt-1.5 max-w-full overflow-x-auto">{formula}</div>
         </div>
       </div>
 
@@ -226,7 +237,13 @@ function NpvCalc() {
   return (
     <CalcShell
       title="NPV / IRR"
-      formula="NPV = Σ CFₜ/(1+r)ᵗ − CF₀"
+      formula={
+        <Fml>
+          NPV = <span className="sum">Σ</span>
+          <Frac n={<><em>CF</em><sub>t</sub></>} d={<>(1+<em>r</em>)<sup>t</sup></>} /> − <em>CF</em>
+          <sub>0</sub>
+        </Fml>
+      }
       icon="growth"
       inputs={
         <div className="space-y-5">
@@ -281,7 +298,12 @@ function WaccCalc() {
   return (
     <CalcShell
       title="WACC"
-      formula="WACC = E/V·Re + D/V·Rd·(1−T)"
+      formula={
+        <Fml>
+          WACC = <Frac n={<em>E</em>} d={<em>V</em>} />·<em>R</em><sub>e</sub> +{" "}
+          <Frac n={<em>D</em>} d={<em>V</em>} />·<em>R</em><sub>d</sub>·(1−<em>T</em>)
+        </Fml>
+      }
       icon="scale"
       inputs={
         <Fields>
@@ -313,7 +335,11 @@ function CapmCalc() {
   return (
     <CalcShell
       title="CAPM"
-      formula="Re = Rf + β·ERP"
+      formula={
+        <Fml>
+          <em>R</em><sub>e</sub> = <em>R</em><sub>f</sub> + <em>β</em>·ERP
+        </Fml>
+      }
       icon="percent"
       inputs={
         <Fields>
@@ -338,7 +364,11 @@ function BreakevenCalc() {
   return (
     <CalcShell
       title="Точка безубыточности · рычаг"
-      formula="Q* = FC / (P − VC)"
+      formula={
+        <Fml>
+          <em>Q</em>* = <Frac n={<>FC</>} d={<><em>P</em> − <em>VC</em></>} />
+        </Fml>
+      }
       icon="target"
       inputs={
         <Fields>
@@ -371,7 +401,11 @@ function LtvCalc() {
   return (
     <CalcShell
       title="LTV / CAC"
-      formula="LTV = ARPU·GM / churn"
+      formula={
+        <Fml>
+          LTV = <Frac n={<>ARPU · GM</>} d={<>churn</>} />
+        </Fml>
+      }
       icon="users"
       inputs={
         <Fields>
@@ -408,7 +442,13 @@ function BondCalc() {
     <div className="space-y-5">
       <CalcShell
         title="Цена облигации"
-        formula="P = Σ C/(1+y)ᵗ + N/(1+y)ⁿ"
+        formula={
+          <Fml>
+            <em>P</em> = <span className="sum">Σ</span>
+            <Frac n={<em>C</em>} d={<>(1+<em>y</em>)<sup>t</sup></>} /> +{" "}
+            <Frac n={<em>N</em>} d={<>(1+<em>y</em>)<sup>n</sup></>} />
+          </Fml>
+        }
         icon="doc"
         inputs={
           <Fields>
@@ -423,7 +463,11 @@ function BondCalc() {
 
       <CalcShell
         title="Уравнение Фишера"
-        formula="1 + i = (1 + r)(1 + π)"
+        formula={
+          <Fml>
+            1 + <em>i</em> = (1 + <em>r</em>)(1 + <em>π</em>)
+          </Fml>
+        }
         icon="percent"
         inputs={
           <Fields>
