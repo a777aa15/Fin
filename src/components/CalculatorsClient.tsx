@@ -67,6 +67,18 @@ function num(v: string): number {
   return parseFloat(v) || 0;
 }
 
+// Разделение разрядов пробелами для отображения (1000000 → 1 000 000).
+function group(v: string): string {
+  if (!v) return "";
+  const [int, dec] = v.split(".");
+  const g = int.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  return dec !== undefined ? `${g}.${dec}` : g;
+}
+// Оставляем только цифры и точку (для хранения числа без пробелов).
+function clean(v: string): string {
+  return v.replace(/[^\d.]/g, "");
+}
+
 function Icon({ name, className }: { name: string; className?: string }) {
   const c = { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8, className, "aria-hidden": true } as const;
   switch (name) {
@@ -153,16 +165,17 @@ function Field({
   step?: string;
   full?: boolean;
 }) {
+  const grouped = unit === "₽"; // денежные поля — с разделением разрядов
   return (
     <label className={`block ${full ? "sm:col-span-2" : ""}`}>
       <span className="mb-1.5 block text-xs font-medium text-ink-secondary">{label}</span>
       <div className="relative">
         <input
-          type="number"
-          inputMode="decimal"
-          step={step}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
+          type={grouped ? "text" : "number"}
+          inputMode={grouped ? "numeric" : "decimal"}
+          step={grouped ? undefined : step}
+          value={grouped ? group(value) : value}
+          onChange={(e) => onChange(grouped ? clean(e.target.value) : e.target.value)}
           className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 pr-11 text-sm tabular-nums text-ink transition-colors focus:border-green focus:outline-none focus:ring-2 focus:ring-green/20"
         />
         {unit ? (
@@ -228,10 +241,10 @@ function NpvCalc() {
                 <label key={i} className="block">
                   <span className="mb-1 block text-[11px] text-ink-muted">Год {i + 1}</span>
                   <input
-                    type="number"
-                    inputMode="decimal"
-                    value={cf}
-                    onChange={(e) => setCfs(cfs.map((x, j) => (j === i ? e.target.value : x)))}
+                    type="text"
+                    inputMode="numeric"
+                    value={group(cf)}
+                    onChange={(e) => setCfs(cfs.map((x, j) => (j === i ? clean(e.target.value) : x)))}
                     className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm tabular-nums text-ink focus:border-green focus:outline-none focus:ring-2 focus:ring-green/20"
                   />
                 </label>
