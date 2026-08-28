@@ -6,12 +6,17 @@ import { useAuth } from "@/lib/progress";
 // Компактный перетаскиваемый блокнот в стиле окна macOS / Apple Notes.
 //  • язычок слева/справа, его можно перетаскивать вдоль края экрана;
 //  • окно тянется за заголовок, перемещается по странице;
-//  • появление — scale + fade с лёгким подскоком, как окна в macOS.
+//  • появление — scale + fade с лёгким подскоком, как окна в macOS;
+//  • в заметку можно вставить скриншот (Ctrl+V) или прикрепить файл.
 // Заметки и позиции сохраняются в localStorage на пользователя.
 
-type Note = { id: string; text: string; updatedAt: number };
+type Note = { id: string; text: string; images: string[]; updatedAt: number };
 type TabPos = { side: "left" | "right"; y: number };
 type WinPos = { x: number; y: number };
+
+const MAX_IMAGES = 6;
+const MAX_IMG_DIM = 720; // px по большей стороне после сжатия
+const JPEG_QUALITY = 0.72;
 
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 
@@ -45,6 +50,37 @@ function fmtDate(ts: number): string {
 const titleOf = (t: string) => (t.split("\n").find((l) => l.trim()) || "").trim() || "Новая заметка";
 const previewOf = (t: string) => t.split("\n").slice(1).join(" ").trim() || "Нет текста";
 
+// Сжимает изображение (скриншот из буфера обмена или файл) до разумного
+// размера перед сохранением в localStorage — иначе несколько скриншотов
+// быстро упрутся в лимит браузера (обычно 5–10 МБ на источник).
+function fileToCompressedDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, MAX_IMG_DIM / Math.max(img.width, img.height));
+      const w = Math.max(1, Math.round(img.width * scale));
+      const h = Math.max(1, Math.round(img.height * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      URL.revokeObjectURL(url);
+      if (!ctx) {
+        reject(new Error("canvas 2d недоступен"));
+        return;
+      }
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL("image/jpeg", JPEG_QUALITY));
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("не удалось загрузить изображение"));
+    };
+    img.src = url;
+  });
+}
+
 export function NotesWidget() {
   const { user, loaded } = useAuth();
   const [notes, setNotes] = useState<Note[]>([]);
@@ -53,7 +89,11 @@ export function NotesWidget() {
   const [tab, setTab] = useState<TabPos>({ side: "left", y: 320 });
   const [tabDrag, setTabDrag] = useState<{ x: number; y: number } | null>(null);
   const [win, setWin] = useState<WinPos>({ x: 84, y: 130 });
+  const [imgError, setImgError] = useState<string | null>(null);
+  const [imgBusy, setImgBusy] = useState(false);
+  const [lightbox, setLightbox] = useState<string | null>(null);
   const editorRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const tabRef = useRef({ down: false, moved: false, sx: 0, sy: 0 });
   const winRef = useRef({ down: false, ox: 0, oy: 0 });
 
@@ -66,8 +106,9 @@ export function NotesWidget() {
       const raw = localStorage.getItem(storageKey);
       // localStorage недоступен при SSR, а ключ зависит от пользователя —
       // поэтому заметки читаются здесь, после монтирования.
+      const parsed = raw ? (JSON.parse(raw) as Note[]) : [];
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setNotes(raw ? (JSON.parse(raw) as Note[]) : []);
+      setNotes(parsed.map((n) => ({ ...n, images: n.images ?? [] })));
     } catch {
       setNotes([]);
     }
@@ -97,18 +138,29 @@ export function NotesWidget() {
     if (open && activeId) editorRef.current?.focus();
   }, [open, activeId]);
 
+  // Сообщение об ошибке скриншота само пропадает через несколько секунд.
+  useEffect(() => {
+    if (!imgError) return;
+    const t = setTimeout(() => setImgError(null), 4000);
+    return () => clearTimeout(t);
+  }, [imgError]);
+
   if (!loaded || !user) return null;
 
-  const persist = (next: Note[]) => {
+  // Пишет в localStorage СНАЧАЛА — если места не хватило (quota), состояние
+  // не меняется, и в интерфейсе не «зависает» скриншот, который на самом
+  // деле не сохранился.
+  const persist = (next: Note[]): boolean => {
     const sorted = [...next].sort((a, b) => b.updatedAt - a.updatedAt);
-    setNotes(sorted);
     if (storageKey) {
       try {
         localStorage.setItem(storageKey, JSON.stringify(sorted));
       } catch {
-        /* quota */
+        return false;
       }
     }
+    setNotes(sorted);
+    return true;
   };
   const savePos = (k: string, v: unknown) => {
     try {
@@ -120,7 +172,7 @@ export function NotesWidget() {
 
   const active = notes.find((n) => n.id === activeId) || null;
   const newNote = () => {
-    const n: Note = { id: crypto.randomUUID(), text: "", updatedAt: Date.now() };
+    const n: Note = { id: crypto.randomUUID(), text: "", images: [], updatedAt: Date.now() };
     persist([n, ...notes]);
     setActiveId(n.id);
   };
@@ -129,6 +181,54 @@ export function NotesWidget() {
   const remove = (id: string) => {
     persist(notes.filter((n) => n.id !== id));
     if (activeId === id) setActiveId(null);
+  };
+
+  const addImages = async (files: File[]) => {
+    if (!active || files.length === 0) return;
+    const room = MAX_IMAGES - active.images.length;
+    if (room <= 0) {
+      setImgError(`Максимум ${MAX_IMAGES} скриншотов в одной заметке`);
+      return;
+    }
+    setImgBusy(true);
+    try {
+      const dataUrls = await Promise.all(files.slice(0, room).map(fileToCompressedDataUrl));
+      const updated = notes.map((n) =>
+        n.id === active.id ? { ...n, images: [...n.images, ...dataUrls], updatedAt: Date.now() } : n
+      );
+      const ok = persist(updated);
+      setImgError(ok ? null : "Не хватило места в браузере — удалите старые скриншоты");
+    } catch {
+      setImgError("Не удалось обработать изображение");
+    } finally {
+      setImgBusy(false);
+    }
+  };
+  const removeImage = (idx: number) => {
+    if (!active) return;
+    const images = active.images.filter((_, i) => i !== idx);
+    persist(notes.map((n) => (n.id === active.id ? { ...n, images, updatedAt: Date.now() } : n)));
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    const images: File[] = [];
+    for (const item of items) {
+      if (item.type.startsWith("image/")) {
+        const f = item.getAsFile();
+        if (f) images.push(f);
+      }
+    }
+    if (images.length === 0) return; // обычный текст — не перехватываем
+    e.preventDefault();
+    void addImages(images);
+  };
+
+  const handleFilePick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files ? Array.from(e.target.files) : [];
+    e.target.value = ""; // чтобы повторный выбор того же файла снова сработал
+    if (files.length) void addImages(files);
   };
 
   /* ---- перетаскивание язычка вдоль края ---- */
@@ -277,13 +377,61 @@ export function NotesWidget() {
 
         {/* Тело */}
         {active ? (
-          <textarea
-            ref={editorRef}
-            value={active.text}
-            onChange={(e) => updateActive(e.target.value)}
-            placeholder="Пишите заметку…"
-            className="flex-1 resize-none bg-transparent px-4 py-3.5 text-[14px] leading-relaxed text-white/90 placeholder:text-white/30 focus:outline-none"
-          />
+          <div className="flex min-h-0 flex-1 flex-col">
+            <textarea
+              ref={editorRef}
+              value={active.text}
+              onChange={(e) => updateActive(e.target.value)}
+              onPaste={handlePaste}
+              placeholder="Пишите заметку… Скриншот можно вставить сюда (Ctrl+V)"
+              className="min-h-0 flex-1 resize-none bg-transparent px-4 py-3.5 text-[14px] leading-relaxed text-white/90 placeholder:text-white/30 focus:outline-none"
+            />
+
+            {active.images.length > 0 ? (
+              <div className="flex shrink-0 gap-2 overflow-x-auto border-t border-white/10 px-3 py-2.5">
+                {active.images.map((src, idx) => (
+                  <div key={idx} className="group/thumb relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-white/10">
+                    <button
+                      type="button"
+                      onClick={() => setLightbox(src)}
+                      className="block h-full w-full"
+                      aria-label="Открыть скриншот"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={src} alt="" className="h-full w-full object-cover" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeImage(idx)}
+                      aria-label="Удалить скриншот"
+                      className="absolute right-0.5 top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-black/70 text-white opacity-0 transition-opacity group-hover/thumb:opacity-100"
+                    >
+                      <svg viewBox="0 0 24 24" className="h-2.5 w-2.5" fill="none" stroke="currentColor" strokeWidth="3"><path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" /></svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+
+            <div className="flex shrink-0 items-center gap-2 border-t border-white/10 px-3 py-2">
+              <input ref={fileInputRef} type="file" accept="image/*" multiple hidden onChange={handleFilePick} />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={imgBusy || active.images.length >= MAX_IMAGES}
+                aria-label="Прикрепить скриншот"
+                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-white/50 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-30"
+              >
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+                  <path d="M4 16.5V6.5a2 2 0 012-2h4l1.5 2H18a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2z" strokeLinejoin="round" />
+                  <circle cx="12" cy="12.5" r="2.6" />
+                </svg>
+              </button>
+              <span className="truncate text-[11px] text-white/35">
+                {imgBusy ? "Обрабатываем…" : imgError ?? "Ctrl+V — вставить скриншот"}
+              </span>
+            </div>
+          </div>
         ) : (
           <div className="flex-1 overflow-y-auto p-2">
             {notes.length === 0 ? (
@@ -297,13 +445,21 @@ export function NotesWidget() {
                   <li key={n.id}>
                     <button
                       onClick={() => setActiveId(n.id)}
-                      className="w-full rounded-lg px-3 py-2 text-left transition-colors hover:bg-white/[0.06]"
+                      className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left transition-colors hover:bg-white/[0.06]"
                     >
-                      <div className="truncate text-[14px] font-semibold text-white/90">{titleOf(n.text)}</div>
-                      <div className="mt-0.5 flex items-center gap-2 text-[11px] text-white/40">
-                        <span className="shrink-0">{fmtDate(n.updatedAt)}</span>
-                        <span className="truncate">{previewOf(n.text)}</span>
-                      </div>
+                      {n.images.length > 0 ? (
+                        <span className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md border border-white/10">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={n.images[0]} alt="" className="h-full w-full object-cover" />
+                        </span>
+                      ) : null}
+                      <span className="min-w-0 flex-1">
+                        <div className="truncate text-[14px] font-semibold text-white/90">{titleOf(n.text)}</div>
+                        <div className="mt-0.5 flex items-center gap-2 text-[11px] text-white/40">
+                          <span className="shrink-0">{fmtDate(n.updatedAt)}</span>
+                          <span className="truncate">{previewOf(n.text)}</span>
+                        </div>
+                      </span>
                     </button>
                   </li>
                 ))}
@@ -312,6 +468,18 @@ export function NotesWidget() {
           </div>
         )}
       </div>
+
+      {/* Просмотр скриншота во весь экран */}
+      {lightbox ? (
+        <button
+          onClick={() => setLightbox(null)}
+          aria-label="Закрыть просмотр"
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-6 backdrop-blur-sm"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={lightbox} alt="" className="max-h-full max-w-full rounded-lg object-contain shadow-2xl" />
+        </button>
+      ) : null}
     </>
   );
 }
