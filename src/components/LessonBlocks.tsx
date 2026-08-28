@@ -67,8 +67,38 @@ export function LessonBlocks({ blocks }: { blocks: Block[] }) {
   return <div className="lesson-content">{out}</div>;
 }
 
+// Шаг расчётной цепочки: «– Себестоимость продаж = Валовая прибыль».
+// В тексте курса это единственный способ показать формулу «сверху вниз»
+// (P&L и подобное), но ведущее тире визуально сливается с маркером списка —
+// непонятно, что именно вычитается. Такие строки распознаём и рендерим
+// отдельным компонентом с явным «−», вычитаемым и результатом.
+const WATERFALL_STEP = /^[–-]\s*(.+?)\s*=\s*(.+)$/;
+
 // Вложенные маркированные списки по полю level (0 / 1+).
 function BulletList({ items }: { items: Extract<Block, { type: "bullet" }>[] }) {
+  // Цепочка «база, затем один или несколько шагов вычитания» — узнаваемый
+  // паттерн курса (P&L и т.п.). Рендерим наглядным блоком вместо списка.
+  if (items.length >= 2 && items.every((it) => (it.level ?? 0) === 0)) {
+    const [first, ...rest] = items;
+    const firstIsBase = !WATERFALL_STEP.test(first.text) && !/^[–-]\s*/.test(first.text);
+    const steps = rest.map((it) => it.text.match(WATERFALL_STEP));
+    if (firstIsBase && steps.every((m) => m !== null)) {
+      return (
+        <div className="lesson-waterfall">
+          <div className="lesson-waterfall-base">{first.text}</div>
+          {steps.map((m, k) => (
+            <div className="lesson-waterfall-step" key={k}>
+              <span className="lesson-waterfall-op">−</span>
+              <span className="lesson-waterfall-item">{m![1]}</span>
+              <span className="lesson-waterfall-eq">=</span>
+              <span className="lesson-waterfall-result">{m![2]}</span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+  }
+
   const nodes: ReactNode[] = [];
   let k = 0;
   while (k < items.length) {

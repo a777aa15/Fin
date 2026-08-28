@@ -1,14 +1,39 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import type { DetectiveCase } from "@/content/course";
 import { useCaseResults } from "@/lib/progress";
 
 export function CaseClient({ kase }: { kase: DetectiveCase }) {
+  const { get: getSaved, set: saveResult } = useCaseResults();
+  const saved = getSaved(kase.module);
+
+  // Если дело уже проходили — сначала показываем итог прошлой попытки,
+  // а не чистый бланк документов (иначе кажется, что результат «слетел»).
+  const [reviewingPast, setReviewingPast] = useState(false);
+
   const [flagged, setFlagged] = useState<Set<string>>(new Set());
   const [verdict, setVerdict] = useState<number | null>(null);
   const [submitted, setSubmitted] = useState(false);
-  const { set: saveResult } = useCaseResults();
+
+  // Прогресс подгружается из БД асинхронно, поэтому при первом рендере saved
+  // ещё не известен. Как только данные приходят, один раз включаем экран
+  // «уже проходили», если пользователь ещё ничего не отметил и не отправил
+  // свежую попытку.
+  const hydratedRef = useRef(false);
+  useEffect(() => {
+    if (hydratedRef.current) return;
+    if (submitted) {
+      hydratedRef.current = true;
+      return;
+    }
+    if (saved && flagged.size === 0 && verdict === null) {
+      hydratedRef.current = true;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setReviewingPast(true);
+    }
+  }, [saved, submitted, flagged, verdict]);
 
   const allStatements = useMemo(
     () => kase.documents.flatMap((d) => d.statements),
@@ -43,8 +68,33 @@ export function CaseClient({ kase }: { kase: DetectiveCase }) {
     setFlagged(new Set());
     setVerdict(null);
     setSubmitted(false);
+    setReviewingPast(false);
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   };
+
+  // Экран «уже проходили это дело» — вместо чистого бланка при повторном заходе.
+  if (reviewingPast && saved) {
+    return (
+      <div className="card flex flex-col items-center gap-3 p-8 text-center">
+        <div className="text-sm text-ink-muted">Вы уже разбирали это дело</div>
+        <div className={`text-2xl font-extrabold ${saved.verdictCorrect ? "text-green-dark" : "text-amber"}`}>
+          {saved.verdictCorrect ? "Вывод был верным" : "Вывод был неверным"}
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Stat label="Найдено флагов" value={`${saved.found} / ${saved.totalFlags}`} />
+          <Stat label="Ложных срабатываний" value={String(saved.falsePositives)} />
+        </div>
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+          <button onClick={reset} className="btn btn-primary px-6 py-3">
+            Разобрать заново
+          </button>
+          <Link href="/study" className="btn btn-secondary px-6 py-3">
+            Вернуться к обзору курса
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -175,9 +225,14 @@ export function CaseClient({ kase }: { kase: DetectiveCase }) {
             Проверить дело
           </button>
         ) : (
-          <button onClick={reset} className="btn btn-secondary px-6 py-3">
-            Пройти заново
-          </button>
+          <>
+            <button onClick={reset} className="btn btn-secondary px-6 py-3">
+              Пройти заново
+            </button>
+            <Link href="/study" className="btn btn-primary px-6 py-3">
+              Вернуться к обзору курса
+            </Link>
+          </>
         )}
         {verdict === null && !submitted ? (
           <span className="text-sm text-ink-muted">Выберите итоговый вывод, чтобы проверить</span>

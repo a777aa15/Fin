@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Container } from "@/components/primitives";
+import { BackButton } from "@/components/BackButton";
 import { QuizClient } from "@/components/quiz/QuizClient";
 import { quizzes, getQuiz, getModule, getCase } from "@/content/course";
 
@@ -31,7 +32,8 @@ export default async function QuizPage({ params }: { params: Promise<Params> }) 
       <Header />
       <main className="flex-1">
         <Container size="narrow" className="py-8 sm:py-12">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink-muted">
+          <BackButton />
+          <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink-muted">
             <Link href="/study" className="hover:text-green-dark">Обзор</Link>
             <span>/</span>
             <span className="text-ink-secondary">Модуль {mod.n}</span>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { QuizQuestion } from "@/content/course";
 import { useQuizResults } from "@/lib/progress";
@@ -14,16 +14,35 @@ export function QuizClient({
   questions: QuizQuestion[];
   hasCase: boolean;
 }) {
-  const [answers, setAnswers] = useState<(number | null)[]>(
-    () => questions.map(() => null)
-  );
-  const [submitted, setSubmitted] = useState(false);
-  const { set: saveResult } = useQuizResults();
+  const { get: getSaved, set: saveResult } = useQuizResults();
+  const saved = getSaved(moduleN);
 
-  const score = questions.reduce(
-    (s, q, i) => s + (answers[i] === q.correct ? 1 : 0),
-    0
-  );
+  // Если тест уже проходили — сначала показываем итог прошлой попытки,
+  // а не чистый бланк (иначе кажется, что результат «слетел»).
+  const [reviewingPast, setReviewingPast] = useState(false);
+
+  const [answers, setAnswers] = useState<(number | null)[]>(() => questions.map(() => null));
+  const [submitted, setSubmitted] = useState(false);
+
+  // Прогресс подгружается из БД асинхронно (после /api/me), поэтому при
+  // первом рендере saved ещё не известен — useState(!!saved) его бы не увидел.
+  // Как только данные приходят, один раз включаем экран «уже проходили»,
+  // если пользователь ещё не начал отвечать и не отправил свежую попытку.
+  const hydratedRef = useRef(false);
+  useEffect(() => {
+    if (hydratedRef.current) return;
+    if (submitted) {
+      hydratedRef.current = true;
+      return;
+    }
+    if (saved && answers.every((a) => a === null)) {
+      hydratedRef.current = true;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setReviewingPast(true);
+    }
+  }, [saved, submitted, answers]);
+
+  const score = questions.reduce((s, q, i) => s + (answers[i] === q.correct ? 1 : 0), 0);
   const allAnswered = answers.every((a) => a !== null);
 
   useEffect(() => {
@@ -31,11 +50,41 @@ export function QuizClient({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [submitted]);
 
-  const reset = () => {
+  const startFresh = () => {
     setAnswers(questions.map(() => null));
     setSubmitted(false);
+    setReviewingPast(false);
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   };
+
+  // Экран «уже проходили этот тест» — вместо чистого бланка при повторном заходе.
+  if (reviewingPast && saved) {
+    return (
+      <div className="card flex flex-col items-center gap-3 p-8 text-center">
+        <div className="text-sm text-ink-muted">Вы уже проходили этот тест</div>
+        <div className="text-4xl font-extrabold text-green-dark">
+          {saved.score} / {saved.total}
+        </div>
+        <div className="text-sm text-ink-secondary">
+          Лучший результат сохранён. Можно пройти ещё раз — новый результат заменит прошлый,
+          только если он окажется выше.
+        </div>
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+          <button onClick={startFresh} className="btn btn-primary px-6 py-3">
+            Пройти тест заново
+          </button>
+          <Link href="/study" className="btn btn-secondary px-6 py-3">
+            Вернуться к обзору курса
+          </Link>
+          {hasCase ? (
+            <Link href={`/detective/${moduleN}`} className="btn btn-secondary px-6 py-3">
+              Дело детектива модуля
+            </Link>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -133,7 +182,7 @@ export function QuizClient({
           </button>
         ) : (
           <>
-            <button onClick={reset} className="btn btn-secondary px-6 py-3">
+            <button onClick={startFresh} className="btn btn-secondary px-6 py-3">
               Пройти заново
             </button>
             {hasCase ? (
@@ -141,6 +190,9 @@ export function QuizClient({
                 Дело детектива модуля
               </Link>
             ) : null}
+            <Link href="/study" className="btn btn-secondary px-6 py-3">
+              Вернуться к обзору курса
+            </Link>
           </>
         )}
         {!allAnswered && !submitted ? (

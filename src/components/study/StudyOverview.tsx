@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { useLessonProgress } from "@/lib/progress";
+import { useLessonProgress, useQuizResults, useCaseResults } from "@/lib/progress";
 
 const MIN_PER_LESSON = 12; // оценка длительности урока для метрики «осталось часов»
 
@@ -18,7 +18,9 @@ export type SlimModule = {
 };
 
 export function StudyOverview({ modules }: { modules: SlimModule[] }) {
-  const { done, isDone } = useLessonProgress();
+  const { done, isDone, setDone } = useLessonProgress();
+  const { get: getQuiz } = useQuizResults();
+  const { get: getCase } = useCaseResults();
   const totalLessons = useMemo(
     () => modules.reduce((s, m) => s + m.lessons.length, 0),
     [modules]
@@ -81,6 +83,8 @@ export function StudyOverview({ modules }: { modules: SlimModule[] }) {
         {modules.map((m) => {
           const isOpen = open.has(m.n);
           const mDone = m.lessons.filter((l) => done.has(l.num)).length;
+          const quizResult = m.hasQuiz ? getQuiz(m.n) : undefined;
+          const caseResult = m.hasCase ? getCase(m.n) : undefined;
           return (
             <div key={m.n} className="card overflow-hidden">
               <button
@@ -105,20 +109,29 @@ export function StudyOverview({ modules }: { modules: SlimModule[] }) {
               {isOpen ? (
                 <div className="border-t border-border">
                   <ul className="divide-y divide-border">
-                    {m.lessons.map((l) => (
-                      <li key={l.num}>
-                        <Link href={`/lesson/${l.num}`} className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-grey-light/60">
-                          <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[10px] ${isDone(l.num) ? "border-green bg-green text-on-green" : "border-border-strong text-transparent"}`}>
+                    {m.lessons.map((l) => {
+                      const lessonDone = isDone(l.num);
+                      return (
+                        <li key={l.num} className="flex items-center gap-3 px-5 py-1 transition-colors hover:bg-grey-light/60">
+                          <button
+                            type="button"
+                            onClick={() => setDone(l.num, !lessonDone)}
+                            aria-label={lessonDone ? `Отметить урок ${l.num} не пройденным` : `Отметить урок ${l.num} пройденным`}
+                            aria-pressed={lessonDone}
+                            className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[10px] transition-colors ${lessonDone ? "border-green bg-green text-on-green" : "border-border-strong text-transparent hover:border-green/60"}`}
+                          >
                             <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true">
                               <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
                             </svg>
-                          </span>
-                          <span className="shrink-0 text-xs font-semibold tabular-nums text-ink-muted">{l.num}</span>
-                          <span className="min-w-0 flex-1 truncate text-sm text-ink">{l.title}</span>
-                          {l.tag ? <span className="tag hidden shrink-0 sm:inline-flex">{l.tag}</span> : null}
-                        </Link>
-                      </li>
-                    ))}
+                          </button>
+                          <Link href={`/lesson/${l.num}`} className="flex min-w-0 flex-1 items-center gap-3 py-2">
+                            <span className="shrink-0 text-xs font-semibold tabular-nums text-ink-muted">{l.num}</span>
+                            <span className="min-w-0 flex-1 truncate text-sm text-ink">{l.title}</span>
+                            {l.tag ? <span className="tag hidden shrink-0 sm:inline-flex">{l.tag}</span> : null}
+                          </Link>
+                        </li>
+                      );
+                    })}
                   </ul>
                   <div className="flex flex-wrap gap-3 border-t border-border bg-grey-light/40 px-5 py-3 text-sm">
                     {m.hasExtras ? (
@@ -127,13 +140,27 @@ export function StudyOverview({ modules }: { modules: SlimModule[] }) {
                       </Link>
                     ) : null}
                     {m.hasQuiz ? (
-                      <Link href={`/quiz/${m.n}`} className="font-medium text-green-dark hover:underline">
+                      <Link href={`/quiz/${m.n}`} className="flex items-center gap-1.5 font-medium text-green-dark hover:underline">
                         Тест модуля
+                        {quizResult ? (
+                          <span className="rounded-full bg-green-light px-1.5 py-0.5 text-xs font-bold tabular-nums text-green-dark">
+                            {quizResult.score}/{quizResult.total}
+                          </span>
+                        ) : null}
                       </Link>
                     ) : null}
                     {m.hasCase ? (
-                      <Link href={`/detective/${m.n}`} className="font-medium text-green-dark hover:underline">
+                      <Link href={`/detective/${m.n}`} className="flex items-center gap-1.5 font-medium text-green-dark hover:underline">
                         Дело детектива
+                        {caseResult ? (
+                          <span
+                            className={`rounded-full px-1.5 py-0.5 text-xs font-bold ${
+                              caseResult.verdictCorrect ? "bg-green-light text-green-dark" : "bg-amber-light text-amber"
+                            }`}
+                          >
+                            {caseResult.verdictCorrect ? "верно" : "неверно"}
+                          </span>
+                        ) : null}
                       </Link>
                     ) : null}
                   </div>
